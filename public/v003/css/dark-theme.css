@@ -30,106 +30,42 @@
     --status-info: #5f9efa;
 }
 
-/* Dark theme global button overrides */
-button {
-    color: white !important;
-}
-
 /* Button color overrides for dark theme */
-.primary-btn {
-    background-color: var(--primary-color) !important;
-    color: white !important;
-}
-
-.primary-btn:hover {
-    background-color: var(--primary-hover) !important;
-}
-
 .secondary-btn {
-    background-color: #3c4043 !important;
-    color: white !important;
+    background-color: #3c4043;
+    color: var(--text-color);
 }
 
 .secondary-btn:hover {
-    background-color: #4c4c4e !important;
-}
-
-.accent-btn {
-    background-color: var(--accent-color) !important;
-    color: white !important;
-}
-
-.accent-btn:hover {
-    background-color: var(--accent-hover) !important;
+    background-color: #4c4c4e;
 }
 
 .small-btn {
-    background-color: #3c4043 !important;
-    color: white !important;
+    background-color: #3c4043;
+    color: var(--text-color);
 }
 
 .small-btn:hover {
-    background-color: #4c4c4e !important;
+    background-color: #4c4c4e;
 }
 
-/* Google docs specific buttons */
-.google-btn, 
-#connectGoogleDocs,
-#refreshGoogleDocs,
-#exportToDocsButton,
-#importFromGoogleDocs,
-#importSelectedDocs {
-    background-color: #4285f4 !important;
-    color: white !important;
-    border: none !important;
+.google-btn {
+    background-color: #2c2c2e;
+    border: 1px solid #3c4043;
+    color: var(--text-color);
 }
 
-.google-btn:hover,
-#connectGoogleDocs:hover,
-#refreshGoogleDocs:hover,
-#exportToDocsButton:hover,
-#importFromGoogleDocs:hover,
-#importSelectedDocs:hover {
-    background-color: #3367d6 !important;
-}
-
-.control-btn {
-    background-color: #3c4043 !important;
-    color: white !important;
-}
-
-.control-btn:hover {
-    background-color: #4c4c4e !important;
-}
-
-/* Modal buttons */
-.modal-content button {
-    color: white !important;
+.google-btn:hover {
+    background-color: #3c3c3e;
 }
 
 /* Override project and document list styles */
-.project-list li {
-    border-color: #3c4043;
-}
-
 .project-list li:hover {
     background-color: #2a2a2a;
 }
 
-.project-list li.active {
-    background-color: rgba(66, 133, 244, 0.2);
-}
-
-.doc-item, .doc-selection-item {
-    border-color: #3c4043;
-}
-
 .doc-item:hover, .doc-selection-item:hover {
     background-color: #2a2a2a;
-}
-
-.doc-selection-item.selected {
-    background-color: rgba(66, 133, 244, 0.2);
 }
 
 /* Response box code blocks */
@@ -165,31 +101,6 @@ button {
 .modal-content {
     background-color: var(--card-color);
     border: 1px solid var(--border-color);
-}
-
-/* Form inputs in dark mode */
-input, select, textarea {
-    color: var(--text-color) !important;
-    background-color: var(--input-background) !important;
-    border-color: var(--border-color) !important;
-}
-
-/* Fix for Google authentication status */
-.auth-status {
-    color: var(--text-color) !important;
-}
-
-.auth-status.connected {
-    background-color: rgba(52, 168, 83, 0.2);
-}
-
-.auth-status.not-connected {
-    background-color: rgba(234, 67, 53, 0.2);
-}
-
-/* Fix form labels */
-label {
-    color: var(--text-color);
 }
 
 /* Custom scrollbar for dark theme */

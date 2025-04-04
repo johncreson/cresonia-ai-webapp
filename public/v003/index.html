@@ -14,9 +14,12 @@
     <!-- Marked.js for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
     
-    <!-- Google API Library -->
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client"></script>
+<!-- Google API Library -->
+<script src="https://apis.google.com/js/api.js"></script>
+<script>console.log('API.js loaded, gapi available:', typeof gapi !== 'undefined');</script>
+<script src="https://accounts.google.com/gsi/client"></script>
+<script>console.log('GSI client loaded, google.accounts available:', 
+               typeof google !== 'undefined' && typeof google.accounts !== 'undefined');</script>
 </head>
 <body>
     <button id="themeToggle" class="theme-toggle" title="Toggle dark/light mode">☀️</button>
@@ -176,18 +179,20 @@
                         <input type="password" id="googleApiKey" placeholder="Google Cloud API Key">
                         <p class="input-help">Only needed for advanced Google Docs features</p>
                     </div>
+<div class="form-group">
+    <label for="customModelInput">Add Custom Model:</label>
+    <div class="input-group">
+        <input type="text" id="customModelInput" placeholder="Enter model identifier (e.g. openai/model-name)">
+        <button id="addCustomModelBtn" class="secondary-btn">Add Model</button>
+    </div>
+    <p class="input-help">Add custom models from OpenRouter to use in the dropdown above.</p>
+</div>
+<div class="form-group">
+    <button id="removeCustomModelBtn" class="secondary-btn">Remove Selected Model</button>
+    <p class="input-help">Select a custom model in the dropdown above and click this button to remove it.</p>
+</div>
                     <button id="saveSettings" class="primary-btn">Save Settings</button>
                     <div id="settingsStatus" class="status"></div>
-                    
-                    <div class="form-group" style="margin-top: 20px;">
-                        <label for="lastSentPrompt">Last Message Sent to AI (for debugging):</label>
-                        <textarea id="lastSentPrompt" readonly style="min-height: 100px; background-color: var(--input-background); color: var(--text-color); font-family: monospace; font-size: 14px;"></textarea>
-                    </div>
-                    <div class="debug-buttons" style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <button id="debugBtn" class="secondary-btn">Test API Connection</button>
-                        <button id="sendTestMsgBtn" class="secondary-btn">Send Test Message</button>
-                        <button id="copyPromptBtn" class="secondary-btn">Copy Last Prompt</button>
-                    </div>
                 </div>
             </aside>
         </div>
@@ -231,33 +236,16 @@
     </footer>
     
     <!-- JavaScript modules -->
-    <!-- First load the services -->
     <script src="js/services/StorageService.js"></script>
     <script src="js/services/AIService.js"></script>
     <script src="js/services/GoogleDocsService.js"></script>
     <script src="js/services/QueueService.js"></script>
     
-    <!-- Wait for services to initialize -->
-    <script>
-        // This helps ensure Google Docs service is initialized before components load
-        console.log('Initializing services...');
-        window.addEventListener('load', function() {
-            console.log('All resources loaded, initializing Google Docs Service');
-            if (window.GoogleDocsService) {
-                GoogleDocsService.initialize().catch(error => {
-                    console.error('Error initializing Google Docs service:', error);
-                });
-            }
-        });
-    </script>
-    
-    <!-- Then load the components -->
     <script src="js/components/ProseEditor.js"></script>
     <script src="js/components/Evaluator.js"></script>
     <script src="js/components/Settings.js"></script>
     <script src="js/components/DocsIntegration.js"></script>
     
-    <!-- Finally load the main app -->
     <script src="js/app.js"></script>
 </body>
 </html>

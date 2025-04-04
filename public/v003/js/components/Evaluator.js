@@ -1,4 +1,7 @@
-// Evaluator.js - Handles the story evaluation functionality
+/**
+ * Evaluator.js
+ * Handles the story evaluation functionality
+ */
 class Evaluator {
     constructor() {
         this.evaluationResults = document.getElementById('evaluationResults');
@@ -11,6 +14,9 @@ class Evaluator {
         this.setupEventListeners();
     }
     
+    /**
+     * Set up event listeners for the evaluator
+     */
     setupEventListeners() {
         if (this.evaluateButton) {
             this.evaluateButton.addEventListener('click', () => this.evaluateStory());
@@ -27,16 +33,11 @@ class Evaluator {
         if (this.evaluationResults) {
             this.evaluationResults.addEventListener('input', () => this.updateWordCount());
         }
-        
-        // Load any existing evaluation from storage
-        StorageService.getCurrentProject().then(project => {
-            if (project && project.evaluation && this.evaluationResults) {
-                this.evaluationResults.innerHTML = project.evaluation;
-                this.updateWordCount();
-            }
-        });
     }
     
+    /**
+     * Update the word count display
+     */
     updateWordCount() {
         if (!this.evaluationResults || !this.evaluationWordCount) return;
         
@@ -46,13 +47,20 @@ class Evaluator {
         this.evaluationWordCount.textContent = `(${wordCount} words)`;
     }
     
+    /**
+     * Count words in text
+     */
     countWords(text) {
         text = text.trim();
         if (!text) return 0;
         
+        // Split by whitespace and filter out empty strings
         return text.split(/\s+/).filter(word => word.trim() !== '').length;
     }
     
+    /**
+     * Show status message with optional timeout
+     */
     showStatus(message, timeout = 0) {
         if (!this.evaluationStatus) return;
         
@@ -65,7 +73,11 @@ class Evaluator {
         }
     }
     
+    /**
+     * Evaluate the current story
+     */
     async evaluateStory() {
+        // Get prose content from the editor
         if (!window.proseEditor) {
             this.showStatus('Prose editor not initialized', 3000);
             return;
@@ -80,12 +92,14 @@ class Evaluator {
             return;
         }
         
+        // Check if API key is set
         const settings = StorageService.getSettings();
         if (!settings.apiKey) {
             this.showStatus('Please enter your API key in settings', 3000);
             return;
         }
         
+        // Don't allow multiple requests at once
         if (window.isGeneratingContent) {
             this.showStatus('Content generation already in progress', 3000);
             return;
@@ -95,25 +109,24 @@ class Evaluator {
             window.isGeneratingContent = true;
             this.showStatus('Generating story evaluation...', 0);
             
-            if (this.evaluateButton) {
-                this.evaluateButton.disabled = true;
-                this.evaluateButton.textContent = 'Evaluating...';
-            }
-            
             if (this.evaluationResults) {
                 this.evaluationResults.innerHTML = 'Evaluating story... This may take a minute.';
                 this.updateWordCount();
             }
             
+            // Generate evaluation
             const response = await AIService.evaluateStory(proseContent, settings);
             
+            // Format the response
             const formattedResponse = AIService.formatResponseAsHTML(response);
             
+            // Update the evaluation box
             if (this.evaluationResults) {
                 this.evaluationResults.innerHTML = formattedResponse;
                 this.updateWordCount();
             }
             
+            // Save to current project if exists
             const currentProject = await StorageService.getCurrentProject();
             if (currentProject) {
                 currentProject.evaluation = formattedResponse;
@@ -134,17 +147,16 @@ class Evaluator {
             
         } finally {
             window.isGeneratingContent = false;
-            
-            if (this.evaluateButton) {
-                this.evaluateButton.disabled = false;
-                this.evaluateButton.textContent = 'Evaluate Story';
-            }
         }
     }
     
+    /**
+     * Copy evaluation to clipboard
+     */
     copyEvaluation() {
         if (!this.evaluationResults) return;
         
+        // Create a temporary element to extract text content without HTML formatting
         const tempElement = document.createElement('div');
         tempElement.innerHTML = this.evaluationResults.innerHTML;
         const evaluationText = tempElement.textContent || tempElement.innerText;
@@ -164,11 +176,15 @@ class Evaluator {
         }
     }
     
+    /**
+     * Clear evaluation
+     */
     clearEvaluation() {
         if (this.evaluationResults) {
             this.evaluationResults.innerHTML = 'Story evaluation will appear here after clicking \'Evaluate Story\'...';
             this.updateWordCount();
             
+            // Update current project if exists
             StorageService.getCurrentProject().then(project => {
                 if (project) {
                     project.evaluation = '';
@@ -180,9 +196,13 @@ class Evaluator {
         }
     }
     
+    /**
+     * Set evaluation content
+     */
     setContent(content) {
         if (!this.evaluationResults) return;
         
+        // Skip if empty or null content
         if (!content) {
             this.evaluationResults.innerHTML = 'Story evaluation will appear here after clicking \'Evaluate Story\'...';
             this.updateWordCount();
@@ -191,12 +211,6 @@ class Evaluator {
         
         this.evaluationResults.innerHTML = content;
         this.updateWordCount();
-    }
-    
-    getContent() {
-        if (!this.evaluationResults) return '';
-        
-        return this.evaluationResults.innerHTML;
     }
 }
 

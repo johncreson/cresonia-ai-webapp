@@ -31,52 +31,6 @@
     color: var(--text-secondary);
 }
 
-/* Backup notice */
-.backup-notice {
-    background-color: rgba(66, 133, 244, 0.1);
-    border-left: 4px solid var(--primary-color);
-    padding: 10px 15px;
-    margin-bottom: 20px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 14px;
-    color: var(--text-secondary);
-}
-
-/* Success message for exports */
-.success-message {
-    background-color: rgba(52, 168, 83, 0.1);
-    border-left: 4px solid var(--status-success);
-    padding: 10px 15px;
-    margin: 15px 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.success-message a {
-    color: var(--primary-color);
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.success-message a:hover {
-    text-decoration: underline;
-}
-
-/* Export status */
-#export-status {
-    background-color: rgba(251, 188, 5, 0.1);
-    border-left: 4px solid var(--status-warning);
-    padding: 10px 15px;
-    margin: 15px 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-/* Response separator */
-.response-separator {
-    border-top: 1px dashed var(--border-color);
-    margin: 20px 0;
-    padding-top: 10px;
-}
-
 /* Evaluator Component */
 .evaluation-section .response-box {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -159,7 +113,7 @@
     display: inline-block;
     width: 16px;
     height: 16px;
-    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%234285F4"><path d="M14,2H6C4.9,2,4,2.9,4,4v16c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2V6L14,2z M15,11H8V9h7V11z M16,15H8v-2h8V15z M13,17H8v-2h5V17z"/></svg>');
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%234285F4"><path d="M14,2H6C4.9,2,4,2.9,4,4v16c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2V6L14,2z M15,11H8V9h7V11z M16,15H8v-2h8V15z M13,17H8 v-2h5V17z"/></svg>');
     background-repeat: no-repeat;
     background-size: contain;
     margin-right: 8px;
@@ -188,53 +142,6 @@
 .google-docs-panel .auth-button img {
     width: 18px;
     height: 18px;
-}
-
-.google-docs-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 15px;
-}
-
-/* Project list styles */
-.project-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-.project-list li {
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--border-color);
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.project-list li:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-}
-
-.project-list li.active {
-    background-color: rgba(66, 133, 244, 0.1);
-    border-left: 3px solid var(--primary-color);
-}
-
-.project-name {
-    font-weight: 500;
-    margin-bottom: 4px;
-}
-
-.project-date {
-    font-size: 12px;
-    color: var(--text-secondary);
-}
-
-.project-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 15px;
 }
 
 /* Settings Component */
@@ -312,139 +219,116 @@
 .settings-section .toggle input:checked + .toggle-slider:before {
     transform: translateX(20px);
 }
-
-/* Modal styling */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal.show {
+/* Custom model management styles */
+.input-group {
     display: flex;
+    gap: 10px;
 }
 
-.modal-content {
-    background-color: var(--card-color);
-    border-radius: var(--radius-md);
-    padding: 20px;
-    width: 90%;
-    max-width: 600px;
-    position: relative;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
-
-.close-modal {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    font-size: 24px;
-    cursor: pointer;
-    color: var(--text-secondary);
-    background: none;
-    border: none;
-    padding: 0;
-    line-height: 1;
-}
-
-.close-modal:hover {
-    color: var(--text-color);
-}
-
-/* Document import list */
-.docs-selection-list {
-    max-height: 300px;
-    overflow-y: auto;
-    margin-bottom: 15px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-}
-
-.doc-selection-item {
-    padding: 10px 15px;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.doc-selection-item:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-}
-
-.doc-selection-item.selected {
-    background-color: rgba(66, 133, 244, 0.1);
-}
-
-.doc-checkbox {
-    margin-right: 10px;
-}
-
-.doc-details {
+.input-group input {
     flex-grow: 1;
 }
 
-.doc-title {
-    font-weight: 500;
-    margin-bottom: 4px;
+.input-group button {
+    min-width: 100px;
 }
 
-.doc-date {
-    font-size: 12px;
-    color: var(--text-secondary);
-}
-
-.loader {
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid var(--primary-color);
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    animation: spin 1s linear infinite;
-    display: inline-block;
-    vertical-align: middle;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Empty placeholders */
-.empty-placeholder {
-    padding: 20px;
-    text-align: center;
-    color: var(--text-secondary);
+/* Dropdown styling for model selections */
+select option:disabled {
+    color: #999;
     font-style: italic;
+    background-color: #f5f5f5;
 }
 
-.empty-placeholder.error {
-    color: var(--status-error);
-    background-color: rgba(234, 67, 53, 0.05);
-    border-radius: var(--radius-sm);
+[data-theme="dark"] select option:disabled {
+    background-color: #3c3c3e;
+    color: #777;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .settings-section .toggle-wrapper {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .settings-section .toggle {
-        margin-bottom: 8px;
-    }
-    
-    .modal-content {
-        width: 95%;
-        padding: 15px;
-    }
+/* Debug buttons styling */
+.debug-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.debug-buttons button {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Google API test button */
+testGoogleAPI {
+    background-color: #f0ad4e;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 9999;
+}
+
+testGoogleAPI:hover {
+    background-color: #ec971f;
+}
+
+/* Custom model management styles */
+.input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.input-group input {
+    flex-grow: 1;
+}
+
+.input-group button {
+    min-width: 100px;
+}
+
+/* Dropdown styling for model selections */
+select option:disabled {
+    color: #999;
+    font-style: italic;
+    background-color: #f5f5f5;
+}
+
+[data-theme="dark"] select option:disabled {
+    background-color: #3c3c3e;
+    color: #777;
+}
+
+/* Debug buttons styling */
+.debug-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.debug-buttons button {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Google API test button */
+#testGoogleAPI {
+    background-color: #f0ad4e;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 9999;
+}
+
+#testGoogleAPI:hover {
+    background-color: #ec971f;
 }
