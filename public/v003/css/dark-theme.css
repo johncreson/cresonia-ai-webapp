@@ -1,0 +1,227 @@
+/**
+ * Dark theme styles for Cresonia AI v.003
+ */
+
+:root {
+    --primary-color: #5f9efa;
+    --primary-hover: #4285f4;
+    --secondary-color: #46c266;
+    --secondary-hover: #34a853;
+    --accent-color: #f06b63;
+    --accent-hover: #ea4335;
+    --background-color: #121212;
+    --card-color: #1e1e1e;
+    --text-color: #e8eaed;
+    --text-secondary: #9aa0a6;
+    --border-color: #3c4043;
+    --input-background: #2c2c2e;
+    --shadow: 0 2px 8px rgba(0,0,0,0.3);
+    
+    /* Google-specific colors (adjusted for dark mode) */
+    --google-blue: #5f9efa;
+    --google-red: #f06b63;
+    --google-yellow: #fdd663;
+    --google-green: #46c266;
+    
+    /* Status colors (adjusted for dark mode) */
+    --status-success: #46c266;
+    --status-warning: #fdd663;
+    --status-error: #f06b63;
+    --status-info: #5f9efa;
+}
+
+/* Dark theme global button overrides */
+button {
+    color: white !important;
+}
+
+/* Button color overrides for dark theme */
+.primary-btn {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+.primary-btn:hover {
+    background-color: var(--primary-hover) !important;
+}
+
+.secondary-btn {
+    background-color: #3c4043 !important;
+    color: white !important;
+}
+
+.secondary-btn:hover {
+    background-color: #4c4c4e !important;
+}
+
+.accent-btn {
+    background-color: var(--accent-color) !important;
+    color: white !important;
+}
+
+.accent-btn:hover {
+    background-color: var(--accent-hover) !important;
+}
+
+.small-btn {
+    background-color: #3c4043 !important;
+    color: white !important;
+}
+
+.small-btn:hover {
+    background-color: #4c4c4e !important;
+}
+
+/* Google docs specific buttons */
+.google-btn, 
+#connectGoogleDocs,
+#refreshGoogleDocs,
+#exportToDocsButton,
+#importFromGoogleDocs,
+#importSelectedDocs {
+    background-color: #4285f4 !important;
+    color: white !important;
+    border: none !important;
+}
+
+.google-btn:hover,
+#connectGoogleDocs:hover,
+#refreshGoogleDocs:hover,
+#exportToDocsButton:hover,
+#importFromGoogleDocs:hover,
+#importSelectedDocs:hover {
+    background-color: #3367d6 !important;
+}
+
+.control-btn {
+    background-color: #3c4043 !important;
+    color: white !important;
+}
+
+.control-btn:hover {
+    background-color: #4c4c4e !important;
+}
+
+/* Modal buttons */
+.modal-content button {
+    color: white !important;
+}
+
+/* Override project and document list styles */
+.project-list li {
+    border-color: #3c4043;
+}
+
+.project-list li:hover {
+    background-color: #2a2a2a;
+}
+
+.project-list li.active {
+    background-color: rgba(66, 133, 244, 0.2);
+}
+
+.doc-item, .doc-selection-item {
+    border-color: #3c4043;
+}
+
+.doc-item:hover, .doc-selection-item:hover {
+    background-color: #2a2a2a;
+}
+
+.doc-selection-item.selected {
+    background-color: rgba(66, 133, 244, 0.2);
+}
+
+/* Response box code blocks */
+.response-box code {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.response-box pre {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Boxed content */
+.response-box .boxed {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Error message */
+.error {
+    color: #f48fb1;
+    background-color: rgba(244, 143, 177, 0.1);
+}
+
+/* Document status */
+.save-status.saving {
+    color: var(--status-warning);
+}
+
+.save-status.error {
+    color: var(--status-error);
+}
+
+/* Modal background */
+.modal-content {
+    background-color: var(--card-color);
+    border: 1px solid var(--border-color);
+}
+
+/* Form inputs in dark mode */
+input, select, textarea {
+    color: var(--text-color) !important;
+    background-color: var(--input-background) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Fix for Google authentication status */
+.auth-status {
+    color: var(--text-color) !important;
+}
+
+.auth-status.connected {
+    background-color: rgba(52, 168, 83, 0.2);
+}
+
+.auth-status.not-connected {
+    background-color: rgba(234, 67, 53, 0.2);
+}
+
+/* Fix form labels */
+label {
+    color: var(--text-color);
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #3c4043;
+    border-radius: 6px;
+    border: 3px solid #1e1e1e;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #4c4c4e;
+}
+
+/* Placeholder text color */
+::placeholder {
+    color: #9aa0a6;
+    opacity: 1;
+}
+
+:-ms-input-placeholder {
+    color: #9aa0a6;
+}
+
+::-ms-input-placeholder {
+    color: #9aa0a6;
+}

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cresonia AI - Version Select</title>
+    <!-- Inline SVG favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>C</text></svg>" type="image/svg+xml">
+    
+    <!-- Firebase SDK -->
+    <script defer src="/__/firebase/11.5.0/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/11.5.0/firebase-analytics-compat.js"></script>
+    <script defer src="/__/firebase/init.js?useEmulator=false"></script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 90%;
+        }
+        h1 {
+            color: #4285f4;
+            margin-top: 0;
+        }
+        h2 {
+            color: #5f6368;
+            font-weight: 400;
+            margin-bottom: 25px;
+        }
+        p {
+            margin: 20px 0;
+            line-height: 1.6;
+        }
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #4285f4;
+        }
+        .version-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        @media (min-width: 768px) {
+            .version-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        .version-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: left;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            background-color: #f9f9f9;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .version-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        .version-card.featured {
+            border-color: #4285f4;
+        }
+        .version-card.featured::after {
+            content: "Latest";
+            position: absolute;
+            top: 10px;
+            right: -30px;
+            background-color: #4285f4;
+            color: white;
+            padding: 5px 30px;
+            font-size: 12px;
+            transform: rotate(45deg);
+        }
+        .version-name {
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #4285f4;
+        }
+        .version-date {
+            font-size: 12px;
+            color: #5f6368;
+        }
+        .version-desc {
+            margin: 10px 0;
+            font-size: 14px;
+            flex-grow: 1;
+        }
+        .version-link {
+            display: inline-block;
+            background-color: #4285f4;
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: 500;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+            text-align: center;
+        }
+        .version-link:hover {
+            background-color: #3367d6;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #5f6368;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4285f4;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .feature-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+        .feature-list li {
+            margin-bottom: 5px;
+            position: relative;
+            padding-left: 18px;
+        }
+        .feature-list li::before {
+            content: "✓";
+            color: #34a853;
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+        .new-feature {
+            font-weight: bold;
+            color: #ea4335;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">C</div>
+        <h1>Cresonia AI</h1>
+        <h2>Advanced AI Prose Generation</h2>
+        
+        <p>Select a version to continue:</p>
+        
+        <div class="version-grid">
+            <div class="version-card" onclick="window.location.href='cresonia-webapp-old.html'">
+                <div class="version-name">Version v.001</div>
+                <div class="version-date">March 2025</div>
+                <div class="version-desc">Original version with basic prose generation capabilities.</div>
+                <ul class="feature-list">
+                    <li>Basic prose generation</li>
+                    <li>Simple prompt interface</li>
+                    <li>OpenRouter API integration</li>
+                </ul>
+                <a href="cresonia-webapp-old.html" class="version-link">Launch v.001</a>
+            </div>
+            
+            <div class="version-card" onclick="window.location.href='cresonia-webapp.html'">
+                <div class="version-name">Version v.002</div>
+                <div class="version-date">March 2025</div>
+                <div class="version-desc">Enhanced version with story evaluation features and three-column layout.</div>
+                <ul class="feature-list">
+                    <li>Three-column layout</li>
+                    <li>Story evaluation</li>
+                    <li>Prompt queuing</li>
+                    <li>Multiple AI models</li>
+                </ul>
+                <a href="cresonia-webapp.html" class="version-link">Launch v.002</a>
+            </div>
+            
+            <div class="version-card featured" onclick="window.location.href='v003/index.html'">
+                <div class="version-name">Version v.003</div>
+                <div class="version-date">March 2025</div>
+                <div class="version-desc">Restructured with modular architecture and Google Docs integration.</div>
+                <ul class="feature-list">
+                    <li>Modular code architecture</li>
+                    <li>Improved performance</li>
+                    <li class="new-feature">Google Docs integration</li>
+                    <li class="new-feature">Document import/export</li>
+                    <li class="new-feature">Project management</li>
+                </ul>
+                <a href="v003/index.html" class="version-link">Launch v.003</a>
+            </div>
+        </div>
+        
+        <div id="loading" style="display: none;">
+            <span class="loader"></span> Loading application...
+        </div>
+        
+        <div class="footer">
+            © 2025 Cresonia AI. Powered by <a href="https://openrouter.ai/" target="_blank" style="color: #4285f4;">OpenRouter</a>.
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                if (typeof firebase !== 'undefined' && firebase.analytics) {
+                    firebase.analytics();
+                    console.log('Firebase Analytics initialized');
+                }
+            } catch (e) {
+                console.error('Firebase initialization error:', e);
+            }
+            
+            const links = document.querySelectorAll('.version-link');
+            links.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    document.getElementById('loading').style.display = 'block';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

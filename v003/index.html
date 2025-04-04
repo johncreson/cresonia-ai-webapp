@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cresonia AI v.003</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>C</text></svg>" type="image/svg+xml">
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link id="theme-stylesheet" rel="stylesheet" href="css/light-theme.css">
+    
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+    
+    <!-- Google API Library -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+</head>
+<body>
+    <button id="themeToggle" class="theme-toggle" title="Toggle dark/light mode">☀️</button>
+    
+    <div class="container">
+        <header class="main-header">
+            <div class="header-content">
+                <img src="assets/logo.svg" alt="Cresonia AI Logo" class="logo" id="logoPlaceholder">
+                <h1>Cresonia AI <span class="version-badge">v.003</span></h1>
+            </div>
+            <p class="tagline">Advanced AI Prose Generation</p>
+        </header>
+        
+        <div class="dashboard">
+            <!-- Left Sidebar -->
+            <aside class="sidebar">
+                <div class="card file-navigator">
+                    <h2>Projects</h2>
+                    <div class="project-controls">
+                        <button id="createProject" class="control-btn">New Project</button>
+                        <button id="importFromGoogleDocs" class="control-btn">Import from Google Docs</button>
+                    </div>
+                    <ul id="projectList" class="project-list">
+                        <li class="empty-placeholder">No projects yet</li>
+                    </ul>
+                </div>
+                
+                <div class="card google-docs-panel">
+                    <h2>Google Docs</h2>
+                    <div id="googleAuthStatus" class="auth-status not-connected">
+                        <span class="status-indicator"></span>
+                        <span class="status-text">Not connected</span>
+                    </div>
+                    <button id="connectGoogleDocs" class="primary-btn">Connect to Google Docs</button>
+                    <div id="googleDocsControls" class="google-docs-controls" style="display: none;">
+                        <button id="refreshGoogleDocs" class="control-btn">Refresh Documents</button>
+                        <button id="exportToGoogleDocs" class="control-btn">Export Current Prose</button>
+                    </div>
+                    <div id="googleDocsList" class="docs-list">
+                        <div class="empty-placeholder">Connect to see your Google Docs</div>
+                    </div>
+                </div>
+            </aside>
+            
+            <!-- Main Content Area -->
+            <main class="main-content">
+                <div class="card prompt-section">
+                    <h2>Prose Directions <span id="promptWordCount" class="word-count">(0 words)</span></h2>
+                    <div class="form-group">
+                        <textarea id="prompt" placeholder="Enter your prompt here..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="includeProse" class="checkbox-label">
+                            <input type="checkbox" id="includeProse" checked>
+                            Include previous response as prose to continue
+                        </label>
+                    </div>
+                    <div class="button-group">
+                        <button id="sendPrompt" class="primary-btn">Generate Response</button>
+                        <button id="clearPrompt" class="secondary-btn">Clear</button>
+                    </div>
+                    <div id="promptStatus" class="status"></div>
+                    <div class="automation-controls">
+                        <div class="form-group">
+                            <label for="promptQueue">Queue Additional Prompts (One per line):</label>
+                            <textarea id="promptQueue" placeholder="Enter additional prompts here, one per line. These will be processed in sequence after the main prompt." rows="3"></textarea>
+                        </div>
+                        <div class="automation-buttons">
+                            <button id="processQueue" class="secondary-btn">Process Queue</button>
+                            <button id="stopQueue" class="secondary-btn" disabled>Stop Processing</button>
+                            <span id="queueStatus" class="queue-status"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card prose-section">
+                    <div class="section-header">
+                        <h2>Prose <span id="responseWordCount" class="word-count">(0 words)</span></h2>
+                        <div class="document-status">
+                            <span id="saveStatus" class="save-status">Saved</span>
+                            <button id="saveProject" class="icon-btn" title="Save Project">
+                                <span class="icon-save"></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="response" class="response-box" contenteditable="true">Response will appear here...</div>
+                    <div class="button-group">
+                        <button id="copyResponse" class="primary-btn">Copy Response</button>
+                        <button id="clearResponse" class="secondary-btn">Clear</button>
+                        <button id="evaluateButton" class="accent-btn">Evaluate Story</button>
+                        <button id="exportToDocsButton" class="google-btn" title="Export to Google Docs">
+                            <span class="google-icon"></span> Export to Google Docs
+                        </button>
+                    </div>
+                    <div id="responseStatus" class="status"></div>
+                </div>
+                
+                <div class="card evaluation-section">
+                    <h2>Story Evaluation <span id="evaluationWordCount" class="word-count">(0 words)</span></h2>
+                    <div id="evaluationResults" class="response-box">Story evaluation will appear here after clicking 'Evaluate Story'...</div>
+                    <div class="button-group">
+                        <button id="copyEvaluation" class="primary-btn">Copy Evaluation</button>
+                        <button id="clearEvaluation" class="secondary-btn">Clear</button>
+                    </div>
+                    <div id="evaluationStatus" class="status"></div>
+                </div>
+            </main>
+            
+            <!-- Right Sidebar -->
+            <aside class="settings-sidebar">
+                <div class="card style-guide-section">
+                    <h2>Style Guide</h2>
+                    <p>Text entered here will be prepended to your prompt to guide the AI's writing style.</p>
+                    <textarea id="styleGuide" class="style-guide-box" placeholder="Example: Write in a professional and concise manner. Use simple language and avoid jargon."></textarea>
+                    <button id="saveStyleGuide" class="small-btn">Save Style Guide</button>
+                </div>
+                
+                <div class="card settings-section">
+                    <h2>Settings</h2>
+                    <div class="form-group">
+                        <label for="apiKey">OpenRouter API Key:</label>
+                        <input type="password" id="apiKey" placeholder="Enter your OpenRouter API key">
+                    </div>
+                    <div class="form-group">
+                        <label for="siteUrl">Your Site URL:</label>
+                        <input type="text" id="siteUrl" placeholder="https://your-site.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="siteName">Your Site Name:</label>
+                        <input type="text" id="siteName" placeholder="Your Site Name">
+                    </div>
+                    <div class="form-group">
+                        <label for="model">AI Model:</label>
+                        <select id="model">
+                            <option value="openai/gpt-4o">OpenAI GPT-4o</option>
+                            <option value="anthropic/claude-3-opus">Anthropic Claude 3 Opus</option>
+                            <option value="anthropic/claude-3.7-sonnet:beta">Anthropic Claude 3.7 Sonnet (Beta)</option>
+                            <option value="anthropic/claude-3.7-sonnet:thinking">Anthropic Claude 3.7 Sonnet (Thinking)</option>
+                            <option value="meta/llama-3-70b">Meta Llama 3 70B</option>
+                            <option value="google/gemini-pro">Google Gemini Pro</option>
+                            <option value="deepseek/deepseek-r1-zero:free">Deepseek R1 Zero</option>
+                            <option value="deepseek/deepseek-chat:free">Deepseek Chat (Free)</option>
+                            <option value="qwen/qwq-32b:free">Qwen QWQ 32B</option>
+                            <option value="open-r1/olympiccoder-32b:free">OlympicCoder 32B</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="defaultEvaluationModel">Evaluation Model:</label>
+                        <select id="defaultEvaluationModel">
+                            <option value="deepseek/deepseek-chat:free">Deepseek Chat (Free)</option>
+                            <option value="openai/gpt-4o">OpenAI GPT-4o</option>
+                            <option value="anthropic/claude-3-opus">Anthropic Claude 3 Opus</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="googleApiKey">Google API Key (Optional):</label>
+                        <input type="password" id="googleApiKey" placeholder="Google Cloud API Key">
+                        <p class="input-help">Only needed for advanced Google Docs features</p>
+                    </div>
+                    <button id="saveSettings" class="primary-btn">Save Settings</button>
+                    <div id="settingsStatus" class="status"></div>
+                </div>
+            </aside>
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Create New Project</h2>
+            <div class="form-group">
+                <label for="projectName">Project Name:</label>
+                <input type="text" id="projectName" placeholder="Enter project name">
+            </div>
+            <div class="form-group">
+                <label for="projectDescription">Description (optional):</label>
+                <textarea id="projectDescription" placeholder="Brief description of this project"></textarea>
+            </div>
+            <button id="createProjectButton" class="primary-btn">Create Project</button>
+        </div>
+    </div>
+    
+    <div id="googleDocsImportModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Import from Google Docs</h2>
+            <div id="importDocsLoader" class="centered-loader">
+                <div class="loader"></div>
+                <p>Loading your Google Docs...</p>
+            </div>
+            <div id="importDocsList" class="docs-selection-list">
+                <!-- Dynamically populated -->
+            </div>
+            <button id="importSelectedDocs" class="primary-btn">Import Selected Document</button>
+        </div>
+    </div>
+    
+    <footer>
+        <p>© 2025 Cresonia AI. Powered by <a href="https://openrouter.ai/" target="_blank">OpenRouter</a>.</p>
+        <p class="small-text">Get your API key from the <a href="https://openrouter.ai/keys" target="_blank">OpenRouter Keys page</a> and add it in Settings.</p>
+    </footer>
+    
+    <!-- JavaScript modules -->
+    <script src="js/services/StorageService.js"></script>
+    <script src="js/services/AIService.js"></script>
+    <script src="js/services/GoogleDocsService.js"></script>
+    <script src="js/services/QueueService.js"></script>
+    
+    <script src="js/components/ProseEditor.js"></script>
+    <script src="js/components/Evaluator.js"></script>
+    <script src="js/components/Settings.js"></script>
+    <script src="js/components/DocsIntegration.js"></script>
+    
+    <script src="js/app.js"></script>
+</body>
+</html>
