@@ -8,6 +8,7 @@
     // Application state
     let isGeneratingResponse = false;
     let autoSaveInterval = null;
+    let contentProtectionTimeout = null;
     
     // DOM element references
     const elements = {
@@ -61,6 +62,8 @@
      * Initialize the application
      */
     function initialize() {
+        console.log('Initializing Cresonia AI v.003...');
+        
         // Load settings
         loadSettings();
         
@@ -217,6 +220,57 @@
                 updateWordCount('response');
             });
         }
+
+        // Custom model management
+        const addCustomModelBtn = document.getElementById('addCustomModelBtn');
+        if (addCustomModelBtn) {
+            addCustomModelBtn.addEventListener('click', () => {
+                if (window.settingsComponent) {
+                    window.settingsComponent.addCustomModel();
+                }
+            });
+        }
+
+        const removeCustomModelBtn = document.getElementById('removeCustomModelBtn');
+        if (removeCustomModelBtn) {
+            removeCustomModelBtn.addEventListener('click', () => {
+                if (window.settingsComponent) {
+                    window.settingsComponent.removeCustomModel();
+                }
+            });
+        }
+
+        // Project management
+        const createProjectForm = document.getElementById('createProjectButton');
+        if (createProjectForm) {
+            createProjectForm.addEventListener('click', async () => {
+                const nameInput = document.getElementById('projectName');
+                const descInput = document.getElementById('projectDescription');
+                
+                if (nameInput && nameInput.value.trim()) {
+                    await StorageService.createProjectFromCurrentContent(
+                        nameInput.value.trim(),
+                        descInput ? descInput.value.trim() : ''
+                    );
+                    
+                    // Close the modal
+                    document.getElementById('projectModal').classList.remove('show');
+                    
+                    // Clear the form
+                    nameInput.value = '';
+                    if (descInput) descInput.value = '';
+                }
+            });
+        }
+
+        // Modal close buttons
+        document.querySelectorAll('.close-modal').forEach(closeBtn => {
+            closeBtn.addEventListener('click', () => {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.classList.remove('show');
+                });
+            });
+        });
     }
     
     /**
@@ -270,9 +324,52 @@
     }
     
     /**
+     * Protect content from being unexpectedly changed
+     */
+    function protectContent() {
+        if (contentProtectionTimeout) {
+            clearTimeout(contentProtectionTimeout);
+        }
+        
+        if (!elements.responseBox) return;
+        
+        // Store the current content for comparison
+        const currentContent = elements.responseBox.innerHTML;
+        console.log("Setting up content protection for:", 
+                    currentContent.substring(0, 50) + "...");
+        
+        // Cancel any existing protection
+        if (window._contentProtectionInterval) {
+            clearInterval(window._contentProtectionInterval);
+        }
+        
+        // Set up a protection interval that checks for unexpected changes
+        window._contentProtectionInterval = setInterval(() => {
+            if (elements.responseBox && 
+                elements.responseBox.innerHTML !== currentContent &&
+                elements.responseBox.innerHTML === 'Response will appear here...') {
+                
+                console.warn("Content was reset unexpectedly, restoring content");
+                elements.responseBox.innerHTML = currentContent;
+            }
+        }, 100);
+        
+        // Stop protection after 3 seconds
+        contentProtectionTimeout = setTimeout(() => {
+            if (window._contentProtectionInterval) {
+                clearInterval(window._contentProtectionInterval);
+                window._contentProtectionInterval = null;
+                console.log("Content protection disabled after timeout");
+            }
+        }, 3000);
+    }
+    
+    /**
      * Send prompt to AI and get response
      */
     async function sendPrompt() {
+        console.log("Starting sendPrompt function");
+        
         // Get prompt text
         const promptText = elements.promptTextarea?.value.trim();
         if (!promptText) {
@@ -321,6 +418,9 @@
             let isDefaultResponse = !elements.responseBox ||
                 elements.responseBox.innerHTML === 'Response will appear here...' ||
                 elements.responseBox.innerHTML.includes('Loading...');
+                
+            // Store content for appending later
+            const originalContent = isDefaultResponse ? '' : elements.responseBox.innerHTML;
             
             if (!isDefaultResponse && elements.responseBox) {
                 // Create a separator and add loading placeholder with an ID
@@ -339,27 +439,39 @@
             // Format the response
             const formattedResponse = AIService.formatResponseAsHTML(response);
             
+            // Save last sent prompt for debugging
+            localStorage.setItem('lastSentPrompt', formattedPrompt);
+            
             // Update the response box
-const loadingPlaceholder = document.getElementById('loading-placeholder');
-if (loadingPlaceholder && elements.responseBox) {
-    // Replace only the loading placeholder with the new content
-    loadingPlaceholder.outerHTML = formattedResponse;
-} else if (elements.responseBox) {
-    // Check if we wanted to append (had previous content)
-    const isDefaultResponse = elements.responseBox.innerHTML === 'Response will appear here...' || 
-                            elements.responseBox.innerHTML === 'Loading...';
-    
-    if (isDefaultResponse) {
-        // Replace all content if it was default
-        elements.responseBox.innerHTML = formattedResponse;
-    } else if (window.proseEditor) {
-        // Use the ProseEditor's appendContent method if available
-        window.proseEditor.appendContent(formattedResponse, true);
-    } else {
-        // Fallback - append with separator
-        elements.responseBox.innerHTML += '<div class="response-separator"></div>' + formattedResponse;
-    }
-}
+            const loadingPlaceholder = document.getElementById('loading-placeholder');
+            if (loadingPlaceholder && elements.responseBox) {
+                // Replace only the loading placeholder with the new content
+                loadingPlaceholder.outerHTML = formattedResponse;
+                console.log("Content updated by replacing placeholder");
+            } else if (elements.responseBox) {
+                // Handle the case where we need to completely reset or append content
+                if (isDefaultResponse) {
+                    // Replace if this was default content
+                    elements.responseBox.innerHTML = formattedResponse;
+                    console.log("Content updated by replacing default content");
+                } else {
+                    // Append the new content while preserving existing content
+                    if (window.proseEditor && typeof window.proseEditor.appendContent === 'function') {
+                        window.proseEditor.appendContent(formattedResponse, true);
+                        console.log("Content updated using ProseEditor.appendContent");
+                    } else {
+                        elements.responseBox.innerHTML = originalContent + 
+                            '<div class="response-separator"></div>' + formattedResponse;
+                        console.log("Content updated by manual append");
+                    }
+                }
+            }
+            
+            console.log("Content updated successfully:", 
+                      elements.responseBox.innerHTML.substring(0, 100) + "...");
+            
+            // Protect content from being unexpectedly changed
+            protectContent();
             
             // Update word count
             updateWordCount('response');
@@ -372,7 +484,7 @@ if (loadingPlaceholder && elements.responseBox) {
                     StorageService.saveCurrentContent().catch(error => {
                         console.error('Error saving content after generation:', error);
                     });
-                }, 100);
+                }, 1000);
             }
             
             showStatus(elements.promptStatus, 'Response generated successfully!', 3000);
@@ -394,6 +506,12 @@ if (loadingPlaceholder && elements.responseBox) {
             
         } finally {
             isGeneratingResponse = false;
+            
+            // Extra check to make sure we didn't lose content
+            setTimeout(() => {
+                console.log("Delayed check - content after 500ms:", 
+                          elements.responseBox.innerHTML.substring(0, 100) + "...");
+            }, 500);
         }
     }
     
