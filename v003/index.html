@@ -14,9 +14,12 @@
     <!-- Marked.js for Markdown parsing -->
     <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
     
-    <!-- Google API Library -->
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client"></script>
+<!-- Google API Library -->
+<script src="https://apis.google.com/js/api.js"></script>
+<script>console.log('API.js loaded, gapi available:', typeof gapi !== 'undefined');</script>
+<script src="https://accounts.google.com/gsi/client"></script>
+<script>console.log('GSI client loaded, google.accounts available:', 
+               typeof google !== 'undefined' && typeof google.accounts !== 'undefined');</script>
 </head>
 <body>
     <button id="themeToggle" class="theme-toggle" title="Toggle dark/light mode">☀️</button>
@@ -176,6 +179,18 @@
                         <input type="password" id="googleApiKey" placeholder="Google Cloud API Key">
                         <p class="input-help">Only needed for advanced Google Docs features</p>
                     </div>
+<div class="form-group">
+    <label for="customModelInput">Add Custom Model:</label>
+    <div class="input-group">
+        <input type="text" id="customModelInput" placeholder="Enter model identifier (e.g. openai/model-name)">
+        <button id="addCustomModelBtn" class="secondary-btn">Add Model</button>
+    </div>
+    <p class="input-help">Add custom models from OpenRouter to use in the dropdown above.</p>
+</div>
+<div class="form-group">
+    <button id="removeCustomModelBtn" class="secondary-btn">Remove Selected Model</button>
+    <p class="input-help">Select a custom model in the dropdown above and click this button to remove it.</p>
+</div>
                     <button id="saveSettings" class="primary-btn">Save Settings</button>
                     <div id="settingsStatus" class="status"></div>
                 </div>

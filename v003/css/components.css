@@ -219,3 +219,116 @@
 .settings-section .toggle input:checked + .toggle-slider:before {
     transform: translateX(20px);
 }
+/* Custom model management styles */
+.input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.input-group input {
+    flex-grow: 1;
+}
+
+.input-group button {
+    min-width: 100px;
+}
+
+/* Dropdown styling for model selections */
+select option:disabled {
+    color: #999;
+    font-style: italic;
+    background-color: #f5f5f5;
+}
+
+[data-theme="dark"] select option:disabled {
+    background-color: #3c3c3e;
+    color: #777;
+}
+
+/* Debug buttons styling */
+.debug-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.debug-buttons button {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Google API test button */
+#testGoogleAPI {
+    background-color: #f0ad4e;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 9999;
+}
+
+#testGoogleAPI:hover {
+    background-color: #ec971f;
+}
+
+/* Custom model management styles */
+.input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.input-group input {
+    flex-grow: 1;
+}
+
+.input-group button {
+    min-width: 100px;
+}
+
+/* Dropdown styling for model selections */
+select option:disabled {
+    color: #999;
+    font-style: italic;
+    background-color: #f5f5f5;
+}
+
+[data-theme="dark"] select option:disabled {
+    background-color: #3c3c3e;
+    color: #777;
+}
+
+/* Debug buttons styling */
+.debug-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.debug-buttons button {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Google API test button */
+#testGoogleAPI {
+    background-color: #f0ad4e;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 9999;
+}
+
+#testGoogleAPI:hover {
+    background-color: #ec971f;
+}
