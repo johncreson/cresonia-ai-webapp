@@ -340,14 +340,26 @@
             const formattedResponse = AIService.formatResponseAsHTML(response);
             
             // Update the response box
-            const loadingPlaceholder = document.getElementById('loading-placeholder');
-            if (loadingPlaceholder && elements.responseBox) {
-                // Replace only the loading placeholder with the new content
-                loadingPlaceholder.outerHTML = formattedResponse;
-            } else if (elements.responseBox) {
-                // Fallback in case the placeholder isn't found
-                elements.responseBox.innerHTML = formattedResponse;
-            }
+const loadingPlaceholder = document.getElementById('loading-placeholder');
+if (loadingPlaceholder && elements.responseBox) {
+    // Replace only the loading placeholder with the new content
+    loadingPlaceholder.outerHTML = formattedResponse;
+} else if (elements.responseBox) {
+    // Check if we wanted to append (had previous content)
+    const isDefaultResponse = elements.responseBox.innerHTML === 'Response will appear here...' || 
+                            elements.responseBox.innerHTML === 'Loading...';
+    
+    if (isDefaultResponse) {
+        // Replace all content if it was default
+        elements.responseBox.innerHTML = formattedResponse;
+    } else if (window.proseEditor) {
+        // Use the ProseEditor's appendContent method if available
+        window.proseEditor.appendContent(formattedResponse, true);
+    } else {
+        // Fallback - append with separator
+        elements.responseBox.innerHTML += '<div class="response-separator"></div>' + formattedResponse;
+    }
+}
             
             // Update word count
             updateWordCount('response');
