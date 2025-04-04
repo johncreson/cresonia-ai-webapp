@@ -5,57 +5,166 @@
 (function() {
     'use strict';
     
+    // Debug mode
+    const DEBUG = true;
+    
     // Application state
     let isGeneratingResponse = false;
     let autoSaveInterval = null;
     let contentProtectionTimeout = null;
+    let responseHistory = [];
     
-    // DOM element references
+    // Debug logging
+    function debugLog(...args) {
+        if (DEBUG) {
+            console.log(`[Cresonia Debug ${new Date().toISOString().slice(11, 19)}]`, ...args);
+        }
+    }
+    
+    // Global debug info function
+    window.debugCresonia = function() {
+        console.group("🔍 Cresonia AI Debug Info");
+        console.log("Current state:", {
+            isGeneratingResponse,
+            hasContentProtection: !!window._contentProtectionInterval,
+            hasMutationObserver: !!window._contentObserver,
+            responseHistoryEntries: responseHistory.length,
+            lastResponseTime: responseHistory.length > 0 ? responseHistory[responseHistory.length - 1].timestamp : 'none'
+        });
+        
+        // Check DOM elements
+        console.group("DOM Elements");
+        const elements = ['promptTextarea', 'responseBox', 'evaluationResults', 'sendPromptBtn'];
+        elements.forEach(id => {
+            const el = document.getElementById(id);
+            console.log(`${id}: ${el ? '✅ Present' : '❌ Missing'}`);
+            if (id === 'responseBox' && el) {
+                console.log(" - Current content:", el.innerHTML.substring(0, 100) + '...');
+                console.log(" - Has protected content:", !!el.getAttribute('data-protected-content'));
+            }
+        });
+        console.groupEnd();
+        
+        // Check local storage
+        console.group("Local Storage");
+        const keys = ['lastSentPrompt', 'lastGeneratedResponse', 'cresonia-settings', 'cresonia-current-project'];
+        keys.forEach(key => {
+            const value = localStorage.getItem(key);
+            console.log(`${key}: ${value ? '✅ Present' : '❌ Missing'} ${value ? '(' + value.substring(0, 50) + '...)' : ''}`);
+        });
+        console.groupEnd();
+        
+        console.log("Response History:", responseHistory);
+        console.groupEnd();
+        
+        return "Debug info logged to console";
+    };
+    
+    // Global recovery function
+    window.recoverCresonia = function(index = -1) {
+        if (responseHistory.length === 0) {
+            console.error("No responses in history to recover");
+            return false;
+        }
+        
+        const targetIndex = index === -1 ? responseHistory.length - 1 : index;
+        if (targetIndex < 0 || targetIndex >= responseHistory.length) {
+            console.error(`Invalid index ${targetIndex}. History has ${responseHistory.length} entries`);
+            return false;
+        }
+        
+        const entry = responseHistory[targetIndex];
+        const responseBox = document.getElementById('response');
+        if (!responseBox) {
+            console.error("Response box not found");
+            return false;
+        }
+        
+        console.log(`Recovering response from ${entry.timestamp}`);
+        responseBox.innerHTML = entry.content;
+        protectContent();
+        return true;
+    };
+    
+    // DOM element getter function for more reliable element access
+    function getElement(id, alternativeSelectors = []) {
+        // Try the ID first
+        let element = document.getElementById(id);
+        
+        // If not found, try any alternative selectors
+        if (!element && alternativeSelectors.length > 0) {
+            for (const selector of alternativeSelectors) {
+                try {
+                    element = document.querySelector(selector);
+                    if (element) {
+                        debugLog(`Found element ${id} using selector: ${selector}`);
+                        break;
+                    }
+                } catch (e) {
+                    debugLog(`Error with selector ${selector}: ${e.message}`);
+                }
+            }
+        }
+        
+        if (!element) {
+            debugLog(`Element not found: ${id}`);
+        }
+        
+        return element;
+    }
+    
+    // Create elements object with getters to ensure we always look for the latest elements
     const elements = {
-        // Main UI elements
-        promptTextarea: document.getElementById('prompt'),
-        responseBox: document.getElementById('response'),
-        evaluationResults: document.getElementById('evaluationResults'),
+        // Define property getters for all elements to ensure they're always up-to-date
+        get promptTextarea() { 
+            return getElement('prompt', ['textarea', '.prompt-textarea', 'textarea[placeholder*="prompt"]']); 
+        },
+        get responseBox() { 
+            return getElement('response', ['.response-box', '.prose-section .response-box', '[contenteditable="true"]']); 
+        },
+        get evaluationResults() { 
+            return getElement('evaluationResults', ['.evaluation-section .response-box']); 
+        },
         
         // Buttons
-        sendPromptBtn: document.getElementById('sendPrompt'),
-        clearPromptBtn: document.getElementById('clearPrompt'),
-        copyResponseBtn: document.getElementById('copyResponse'),
-        clearResponseBtn: document.getElementById('clearResponse'),
-        evaluateBtn: document.getElementById('evaluateButton'),
-        copyEvaluationBtn: document.getElementById('copyEvaluation'),
-        clearEvaluationBtn: document.getElementById('clearEvaluation'),
-        saveProjectBtn: document.getElementById('saveProject'),
+        get sendPromptBtn() { return getElement('sendPrompt', ['button:contains("Generate")']); },
+        get clearPromptBtn() { return getElement('clearPrompt', ['button:contains("Clear"):first']); },
+        get copyResponseBtn() { return getElement('copyResponse', ['button:contains("Copy Response")']); },
+        get clearResponseBtn() { return getElement('clearResponse', ['button:contains("Clear"):eq(1)']); },
+        get evaluateBtn() { return getElement('evaluateButton', ['button:contains("Evaluate")']); },
+        get copyEvaluationBtn() { return getElement('copyEvaluation', ['button:contains("Copy Evaluation")']); },
+        get clearEvaluationBtn() { return getElement('clearEvaluation', ['button:contains("Clear"):eq(2)']); },
+        get saveProjectBtn() { return getElement('saveProject', ['button[title="Save Project"]']); },
         
         // Status elements
-        promptStatus: document.getElementById('promptStatus'),
-        responseStatus: document.getElementById('responseStatus'),
-        evaluationStatus: document.getElementById('evaluationStatus'),
-        saveStatus: document.getElementById('saveStatus'),
+        get promptStatus() { return getElement('promptStatus'); },
+        get responseStatus() { return getElement('responseStatus'); },
+        get evaluationStatus() { return getElement('evaluationStatus'); },
+        get saveStatus() { return getElement('saveStatus'); },
         
         // Word count elements
-        promptWordCount: document.getElementById('promptWordCount'),
-        responseWordCount: document.getElementById('responseWordCount'),
-        evaluationWordCount: document.getElementById('evaluationWordCount'),
+        get promptWordCount() { return getElement('promptWordCount'); },
+        get responseWordCount() { return getElement('responseWordCount'); },
+        get evaluationWordCount() { return getElement('evaluationWordCount'); },
         
         // Checkboxes
-        includeProse: document.getElementById('includeProse'),
+        get includeProse() { return getElement('includeProse', ['input[type="checkbox"]']); },
         
         // Panels
-        settingsPanel: document.getElementById('settingsCard'),
+        get settingsPanel() { return getElement('settingsCard'); },
         
         // Modals
-        projectModal: document.getElementById('projectModal'),
+        get projectModal() { return getElement('projectModal'); },
         
         // Settings elements
-        styleGuide: document.getElementById('styleGuide'),
-        apiKey: document.getElementById('apiKey'),
-        siteUrl: document.getElementById('siteUrl'),
-        siteName: document.getElementById('siteName'),
-        model: document.getElementById('model'),
-        defaultEvaluationModel: document.getElementById('defaultEvaluationModel'),
-        googleApiKey: document.getElementById('googleApiKey'),
-        themeToggle: document.getElementById('themeToggle')
+        get styleGuide() { return getElement('styleGuide'); },
+        get apiKey() { return getElement('apiKey'); },
+        get siteUrl() { return getElement('siteUrl'); },
+        get siteName() { return getElement('siteName'); },
+        get model() { return getElement('model'); },
+        get defaultEvaluationModel() { return getElement('defaultEvaluationModel'); },
+        get googleApiKey() { return getElement('googleApiKey'); },
+        get themeToggle() { return getElement('themeToggle'); }
     };
     
     /**
@@ -324,44 +433,234 @@
     }
     
     /**
-     * Protect content from being unexpectedly changed
+     * Permanently protect content from being unexpectedly changed with throttling 
+     * and improved user action detection
      */
     function protectContent() {
+        debugLog("Setting up content protection");
+        
         if (contentProtectionTimeout) {
             clearTimeout(contentProtectionTimeout);
+            debugLog("Cleared existing protection timeout");
         }
         
-        if (!elements.responseBox) return;
+        if (!elements.responseBox) {
+            debugLog("Cannot protect content - response box not found");
+            return;
+        }
+        
+        // Check for intentional clear operation in progress
+        if (window._intentionalClear) {
+            debugLog("Not protecting during intentional clear operation");
+            return;
+        }
+        
+        // Don't protect error messages
+        if (elements.responseBox.innerHTML.includes('<div class="error">')) {
+            debugLog("Not protecting error message content");
+            return;
+        }
+        
+        // Don't protect empty or default content
+        if (elements.responseBox.innerHTML === 'Response will appear here...' || 
+            !elements.responseBox.innerHTML.trim()) {
+            debugLog("Not protecting default/empty content");
+            return;
+        }
         
         // Store the current content for comparison
         const currentContent = elements.responseBox.innerHTML;
-        console.log("Setting up content protection for:", 
-                    currentContent.substring(0, 50) + "...");
+        debugLog("Protecting content:", currentContent.substring(0, 50) + "...");
         
-        // Cancel any existing protection
+        // Cancel any existing protection interval
         if (window._contentProtectionInterval) {
             clearInterval(window._contentProtectionInterval);
+            debugLog("Cleared existing protection interval");
         }
         
-        // Set up a protection interval that checks for unexpected changes
-        window._contentProtectionInterval = setInterval(() => {
-            if (elements.responseBox && 
-                elements.responseBox.innerHTML !== currentContent &&
-                elements.responseBox.innerHTML === 'Response will appear here...') {
-                
-                console.warn("Content was reset unexpectedly, restoring content");
-                elements.responseBox.innerHTML = currentContent;
-            }
-        }, 100);
+        // Store a copy of the content in a data attribute for safer storage
+        elements.responseBox.setAttribute('data-protected-content', currentContent);
         
-        // Stop protection after 3 seconds
-        contentProtectionTimeout = setTimeout(() => {
-            if (window._contentProtectionInterval) {
-                clearInterval(window._contentProtectionInterval);
-                window._contentProtectionInterval = null;
-                console.log("Content protection disabled after timeout");
+        // Initialize counter to prevent infinite loops
+        if (!window._protectionRestoreCount) {
+            window._protectionRestoreCount = 0;
+        }
+        
+        // Initialize timestamp for throttling
+        if (!window._lastProtectionTime) {
+            window._lastProtectionTime = 0;
+        }
+        
+        // Create a throttled restoration function
+        if (!window._throttledRestore) {
+            window._throttledRestore = function(targetEl, protectedContent) {
+                // Don't protect during clear operations
+                if (window._intentionalClear) {
+                    debugLog("Not restoring during intentional clear");
+                    return false;
+                }
+                
+                // Check if we've had too many restorations in a row
+                if (window._protectionRestoreCount > 5) {
+                    debugLog("Too many consecutive restorations, pausing protection");
+                    setTimeout(() => { window._protectionRestoreCount = 0; }, 5000);
+                    return false;
+                }
+                
+                // Throttle restorations to prevent freezing
+                const now = Date.now();
+                if (now - window._lastProtectionTime < 1000) { // At most 1 restoration per second
+                    debugLog("Throttling restoration");
+                    return false;
+                }
+                
+                // Update timestamp
+                window._lastProtectionTime = now;
+                
+                // Increment counter
+                window._protectionRestoreCount++;
+                
+                // Do the actual restoration
+                debugLog("Restoring content (count: " + window._protectionRestoreCount + ")");
+                targetEl.innerHTML = protectedContent;
+                
+                return true;
+            };
+        }
+        
+        // Create a backup restoration function that will be called on mutation events
+        if (!window._contentRestoreHandler) {
+            window._contentRestoreHandler = function(mutations) {
+                // Skip if we're in an intentional clear operation
+                if (window._intentionalClear) {
+                    debugLog("Mutation ignored during intentional clear");
+                    return;
+                }
+                
+                // Skip if any mutation includes loading or separator markers (indicating append operation)
+                for (const mutation of mutations) {
+                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                        for (const node of mutation.addedNodes) {
+                            if (node.nodeType === Node.ELEMENT_NODE) {
+                                if (node.id === 'loading-placeholder' || 
+                                    node.className === 'response-separator' ||
+                                    node.innerHTML?.includes('response-separator')) {
+                                    debugLog("Detected append operation, not triggering protection");
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                const targetEl = mutations[0].target;
+                const protectedContent = targetEl.getAttribute('data-protected-content');
+                
+                // Only protect if we have valid content
+                if (!protectedContent) return;
+                
+                // If current content is empty, default, or very short
+                const currentContent = targetEl.innerHTML;
+                
+                // Check if this is a complete reset (vs. an edit or append)
+                const isCompleteReset = 
+                    currentContent === 'Response will appear here...' || 
+                    currentContent === '' || 
+                    (!currentContent.trim()) || 
+                    (targetEl.textContent && 
+                     targetEl.textContent.length < 50 && 
+                     protectedContent.length > 100);
+                
+                if (isCompleteReset) {
+                    debugLog("Content reset detected in mutation");
+                    window._throttledRestore(targetEl, protectedContent);
+                } else {
+                    // If content was changed but not reset, check if it's an append
+                    const isAppend = 
+                        currentContent.includes(protectedContent) || 
+                        protectedContent.includes(currentContent);
+                    
+                    if (isAppend) {
+                        // It's probably an append, update the protected content
+                        targetEl.setAttribute('data-protected-content', currentContent);
+                        debugLog("Detected append, updated protected content");
+                        window._protectionRestoreCount = 0; // Reset counter
+                    } else if (currentContent !== protectedContent && 
+                               currentContent.length > 100) {
+                        // It's a substantial change, update protected content
+                        targetEl.setAttribute('data-protected-content', currentContent);
+                        debugLog("Updated protected content due to substantial change");
+                        window._protectionRestoreCount = 0; // Reset counter
+                    }
+                }
+            };
+        }
+        
+        // Use a MutationObserver for more reliable monitoring
+        if (!window._contentObserver) {
+            window._contentObserver = new MutationObserver(window._contentRestoreHandler);
+            debugLog("Created new MutationObserver");
+        } else {
+            // Disconnect existing observer
+            window._contentObserver.disconnect();
+            debugLog("Disconnected existing MutationObserver");
+        }
+        
+        // Start observing with the observer - only watch for childList changes
+        window._contentObserver.observe(elements.responseBox, {
+            childList: true,
+            subtree: true
+        });
+        debugLog("MutationObserver started");
+        
+        // Reset counter when we set up new protection
+        window._protectionRestoreCount = 0;
+        
+        // Add event listeners to clear buttons
+        const clearButtons = document.querySelectorAll('button:contains("Clear")');
+        clearButtons.forEach(button => {
+            // Remove any existing listeners
+            button.removeEventListener('click', window._handleClearClick);
+            
+            // Create a listener if it doesn't exist
+            if (!window._handleClearClick) {
+                window._handleClearClick = function() {
+                    window._intentionalClear = true;
+                    debugLog("Clear button clicked, disabling protection temporarily");
+                    setTimeout(() => {
+                        window._intentionalClear = false;
+                    }, 1000);
+                };
             }
-        }, 3000);
+            
+            // Add the listener
+            button.addEventListener('click', window._handleClearClick);
+        });
+        
+        // Setup a less frequent interval check as an extra safety net
+        window._contentProtectionInterval = setInterval(() => {
+            if (elements.responseBox && !window._intentionalClear) {
+                const protectedContent = elements.responseBox.getAttribute('data-protected-content');
+                if (!protectedContent) return; // No protected content yet
+                
+                const currentBoxContent = elements.responseBox.innerHTML;
+                
+                // Check if content was reset to default or emptied
+                if (currentBoxContent !== protectedContent && 
+                    (currentBoxContent === 'Response will appear here...' || 
+                     currentBoxContent === '' || 
+                     !currentBoxContent.trim() ||
+                     (elements.responseBox.textContent && 
+                      elements.responseBox.textContent.length < 50 && 
+                      protectedContent.length > 100))) {
+                    
+                    debugLog("Content reset detected in interval check");
+                    window._throttledRestore(elements.responseBox, protectedContent);
+                }
+            }
+        }, 5000); // Check only every 5 seconds
+        
+        debugLog("Permanent content protection enabled");
     }
     
     /**
@@ -439,8 +738,9 @@
             // Format the response
             const formattedResponse = AIService.formatResponseAsHTML(response);
             
-            // Save last sent prompt for debugging
+            // Save both the prompt and response for debugging/recovery
             localStorage.setItem('lastSentPrompt', formattedPrompt);
+            localStorage.setItem('lastGeneratedResponse', formattedResponse);
             
             // Update the response box
             const loadingPlaceholder = document.getElementById('loading-placeholder');
@@ -466,6 +766,10 @@
                     }
                 }
             }
+            
+            // Start content protection immediately after updating content
+            // instead of waiting for the next section of code to execute
+            protectContent();
             
             console.log("Content updated successfully:", 
                       elements.responseBox.innerHTML.substring(0, 100) + "...");
@@ -655,11 +959,33 @@
     }
     
     /**
-     * Clear response
+     * Clear response - properly handle protection
      */
     function clearResponse() {
         if (elements.responseBox) {
+            // Temporarily disable protection
+            const shouldProtect = window._contentObserver !== null;
+            
+            if (shouldProtect) {
+                debugLog("Temporarily suspending protection for clear operation");
+                if (window._contentObserver) {
+                    window._contentObserver.disconnect();
+                }
+                if (window._contentProtectionInterval) {
+                    clearInterval(window._contentProtectionInterval);
+                    window._contentProtectionInterval = null;
+                }
+                
+                // Flag that this is an intentional clear
+                window._intentionalClear = true;
+            }
+            
+            // Clear the content
             elements.responseBox.innerHTML = 'Response will appear here...';
+            
+            // Also clear the protected content attribute
+            elements.responseBox.removeAttribute('data-protected-content');
+            
             updateWordCount('response');
             
             // Update current project if exists
@@ -671,14 +997,23 @@
                     });
                 }
             });
+            
+            // Let the clear operation settle before re-enabling protection
+            setTimeout(() => {
+                window._intentionalClear = false;
+                debugLog("Clear operation complete");
+            }, 1000);
         }
     }
     
     /**
-     * Clear evaluation
+     * Clear evaluation - with proper protection handling
      */
     function clearEvaluation() {
         if (elements.evaluationResults) {
+            // Temporarily disable protection
+            window._intentionalClear = true;
+            
             elements.evaluationResults.innerHTML = 'Story evaluation will appear here after clicking \'Evaluate Story\'...';
             updateWordCount('evaluation');
             
@@ -691,6 +1026,12 @@
                     });
                 }
             });
+            
+            // Let the clear operation settle before re-enabling protection
+            setTimeout(() => {
+                window._intentionalClear = false;
+                debugLog("Evaluation clear operation complete");
+            }, 1000);
         }
     }
     
@@ -774,4 +1115,84 @@
     
     // Initialize the application when the DOM is loaded
     document.addEventListener('DOMContentLoaded', initialize);
+    
+    // Also initialize after window load as a backup
+    window.addEventListener('load', function() {
+        setTimeout(initialize, 1000);
+    });
+    
+    // Emergency recovery function - expose globally
+    window.recoverLastResponse = function() {
+        const lastResponse = localStorage.getItem('lastGeneratedResponse');
+        
+        // Try to find the response box even if elements.responseBox is null
+        const responseBox = elements.responseBox || 
+                          document.querySelector('[contenteditable="true"]') ||
+                          document.querySelector('.response-box');
+        
+        if (lastResponse && responseBox) {
+            console.log("Attempting to recover last response");
+            responseBox.innerHTML = lastResponse;
+            
+            // If this isn't in elements yet, add it
+            if (!elements.responseBox && !responseBox.id) {
+                responseBox.id = 'response';
+            }
+            
+            protectContent();
+            return true;
+        }
+        
+        return false;
+    };
+    
+    // Monitor and fix missing elements - poll every second
+    setInterval(function() {
+        const responseBox = elements.responseBox;
+        if (!responseBox) {
+            debugLog("Response box still missing - searching again");
+            const candidates = document.querySelectorAll('[contenteditable="true"]');
+            if (candidates.length > 0) {
+                candidates[0].id = 'response';
+                debugLog("Added ID to candidate element");
+            }
+        }
+    }, 1000);
+    
+    // Emergency fix function - call this to stop protection if frozen
+    window.stopProtection = function() {
+        // Clear all protection mechanisms
+        if (window._contentProtectionInterval) {
+            clearInterval(window._contentProtectionInterval);
+            window._contentProtectionInterval = null;
+            console.log("Stopped protection interval");
+        }
+        
+        if (window._contentObserver) {
+            window._contentObserver.disconnect();
+            window._contentObserver = null;
+            console.log("Disconnected mutation observer");
+        }
+        
+        // Reset counters and flags
+        window._protectionRestoreCount = 0;
+        window._lastProtectionTime = 0;
+        
+        // Try to restore original innerHTML setter
+        if (elements.responseBox && window._originalInnerHTMLSetter) {
+            try {
+                const elementProto = Object.getPrototypeOf(elements.responseBox);
+                Object.defineProperty(elements.responseBox, 'innerHTML', {
+                    set: window._originalInnerHTMLSetter,
+                    configurable: true
+                });
+                console.log("Restored original innerHTML setter");
+            } catch (e) {
+                console.error("Could not restore innerHTML setter:", e);
+            }
+        }
+        
+        console.log("All protection mechanisms stopped");
+        return "Protection stopped";
+    };
 })();

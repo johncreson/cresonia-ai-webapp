@@ -4,8 +4,8 @@
  */
 class GoogleDocsService {
     // API config
-    static CLIENT_ID = '190817661401-ufnlbdsqrrpir58bfgibtreuv338plb6.apps.googleusercontent.com';
-    static API_KEY = 'AIzaSyAYCWiYNWw0mtjb5ZC_T1hWHeUthO0l_R0'; 
+    static CLIENT_ID = '';
+    static API_KEY = ''; 
     static DISCOVERY_DOCS = [
         'https://docs.googleapis.com/$discovery/rest?version=v1',
         'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
@@ -22,35 +22,34 @@ class GoogleDocsService {
     /**
      * Initialize the Google API client
      */
-    static async initialize() {
-        console.log('GoogleDocsService: Initializing...');
+   static async initialize() {
+    console.log('GoogleDocsService: Initializing...');
+    
+    // Skip if already initialized
+    if (this.isInitialized) {
+        console.log('GoogleDocsService: Already initialized');
+        return;
+    }
+    
+    try {
+        // Load settings
+        const settings = StorageService.getSettings();
+        this.API_KEY = settings.googleApiKey || '';
+        this.CLIENT_ID = settings.googleClientId || '';
         
-        // Skip if already initialized
-        if (this.isInitialized) {
-            console.log('GoogleDocsService: Already initialized');
+        // Update the auth status UI to show not connected
+        this.updateAuthStatus(false);
+        
+        // Check if we have the required credentials
+        if (!this.API_KEY || !this.CLIENT_ID) {
+            console.log('GoogleDocsService: Missing API key or Client ID. Google Docs integration unavailable.');
+            this.hasCredentials = false;
+            this.isInitialized = true;
+            this.updateAuthStatusMessage('Google API credentials required. Add them in Settings.');
             return;
         }
         
-        try {
-            // Load settings
-            const settings = StorageService.getSettings();
-            if (settings.googleApiKey) {
-                this.API_KEY = settings.googleApiKey;
-                console.log('GoogleDocsService: API key loaded from settings');
-            }
-            
-            // Update the auth status UI to show not connected
-            this.updateAuthStatus(false);
-            
-            // Check if we have the required credentials
-            if (!this.API_KEY && !this.CLIENT_ID) {
-                console.log('GoogleDocsService: No API key or Client ID provided. Google Docs integration unavailable.');
-                this.hasCredentials = false;
-                this.isInitialized = true; // Mark as initialized even though we can't use it
-                this.updateAuthStatusMessage('Google API credentials not configured. Add them in Settings.');
-                return;
-            }
-
+        // Continue with initialization as before...
             this.hasCredentials = true;
             
             try {
