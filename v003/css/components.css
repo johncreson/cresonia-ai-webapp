@@ -259,7 +259,7 @@ select option:disabled {
 }
 
 /* Google API test button */
-#testGoogleAPI {
+testGoogleAPI {
     background-color: #f0ad4e;
     color: white;
     border: none;
@@ -272,7 +272,7 @@ select option:disabled {
     z-index: 9999;
 }
 
-#testGoogleAPI:hover {
+testGoogleAPI:hover {
     background-color: #ec971f;
 }
 
