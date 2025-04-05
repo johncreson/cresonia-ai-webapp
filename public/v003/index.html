@@ -47,21 +47,324 @@
                     </ul>
                 </div>
                 
-                <div class="card google-docs-panel">
-                    <h2>Google Docs</h2>
-                    <div id="googleAuthStatus" class="auth-status not-connected">
-                        <span class="status-indicator"></span>
-                        <span class="status-text">Not connected</span>
-                    </div>
-                    <button id="connectGoogleDocs" class="primary-btn">Connect to Google Docs</button>
-                    <div id="googleDocsControls" class="google-docs-controls" style="display: none;">
-                        <button id="refreshGoogleDocs" class="control-btn">Refresh Documents</button>
-                        <button id="exportToGoogleDocs" class="control-btn">Export Current Prose</button>
-                    </div>
-                    <div id="googleDocsList" class="docs-list">
-                        <div class="empty-placeholder">Connect to see your Google Docs</div>
-                    </div>
-                </div>
+                <!-- Complete Google Docs Panel -->
+<div class="card google-docs-panel">
+    <h2>Google Docs</h2>
+    <div id="googleAuthStatus" class="auth-status not-connected">
+        <span class="status-indicator"></span>
+        <span class="status-text">Not connected</span>
+    </div>
+    
+    <div id="googleCredentialStatus" class="credential-status">
+        <div class="credential-message" id="noCredentialsMessage">
+            <p>Google Docs integration requires API credentials.</p>
+            <p>Please add your Google API Key and Client ID in Settings.</p>
+            <button id="openSettingsBtn" class="secondary-btn">Open Settings</button>
+        </div>
+    </div>
+    
+    <button id="connectGoogleDocs" class="primary-btn">Connect to Google Docs</button>
+    
+    <div id="googleDocsControls" class="google-docs-controls" style="display: none;">
+        <button id="refreshGoogleDocs" class="control-btn">Refresh Documents</button>
+        <button id="exportToGoogleDocs" class="control-btn">Export Current Prose</button>
+    </div>
+    
+    <div id="googleDocsList" class="docs-list">
+        <div class="empty-placeholder">Connect to see your Google Docs</div>
+    </div>
+</div>
+
+<!-- Google Docs Import Modal -->
+<div id="googleDocsImportModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2>Import from Google Docs</h2>
+        <div id="importDocsLoader" class="centered-loader">
+            <div class="loader"></div>
+            <p>Loading your Google Docs...</p>
+        </div>
+        <div id="importDocsList" class="docs-selection-list">
+            <!-- Dynamically populated -->
+        </div>
+        <button id="importSelectedDocs" class="primary-btn">Import Selected Document</button>
+    </div>
+</div>
+
+<style>
+    .credential-status {
+        margin-bottom: 15px;
+    }
+    
+    .credential-message {
+        background-color: rgba(251, 188, 5, 0.1);
+        border-left: 4px solid var(--google-yellow);
+        padding: 12px;
+        margin: 10px 0;
+        border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+        font-size: 14px;
+    }
+    
+    .credential-message p {
+        margin: 5px 0;
+    }
+    
+    .credential-message button {
+        margin-top: 8px;
+    }
+    
+    .auth-status {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--radius-sm);
+        font-size: var(--font-sm);
+    }
+
+    .auth-status.connected {
+        background-color: rgba(52, 168, 83, 0.1);
+    }
+
+    .auth-status.not-connected {
+        background-color: rgba(234, 67, 53, 0.1);
+    }
+
+    .status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+    .connected .status-indicator {
+        background-color: var(--status-success);
+    }
+
+    .not-connected .status-indicator {
+        background-color: var(--status-error);
+    }
+
+    .docs-list {
+        margin-top: var(--spacing-md);
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .doc-item {
+        padding: var(--spacing-sm);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+    }
+
+    .doc-item:hover {
+        background-color: #f8f8f8;
+    }
+
+    .doc-icon {
+        margin-right: var(--spacing-sm);
+        color: var(--google-blue);
+    }
+
+    .doc-title {
+        flex-grow: 1;
+        font-size: var(--font-sm);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .doc-date {
+        font-size: var(--font-xs);
+        color: var(--text-secondary);
+    }
+    
+    /* Modal styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background-color: var(--card-color);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-xl);
+        width: 90%;
+        max-width: 600px;
+        position: relative;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .close-modal {
+        position: absolute;
+        top: var(--spacing-md);
+        right: var(--spacing-md);
+        font-size: 24px;
+        cursor: pointer;
+        color: var(--text-secondary);
+    }
+
+    .close-modal:hover {
+        color: var(--text-color);
+    }
+
+    .centered-loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: var(--spacing-xl);
+    }
+
+    .loader {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid var(--primary-color);
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin-bottom: var(--spacing-md);
+    }
+
+    .docs-selection-list {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: var(--spacing-md);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+    }
+
+    .doc-selection-item {
+        padding: var(--spacing-md);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+    }
+
+    .doc-selection-item:hover {
+        background-color: #f8f8f8;
+    }
+
+    .doc-selection-item.selected {
+        background-color: rgba(66, 133, 244, 0.1);
+    }
+
+    .doc-checkbox {
+        margin-right: var(--spacing-md);
+    }
+    
+    /* Dark theme adjustments */
+    [data-theme="dark"] .doc-selection-item:hover,
+    [data-theme="dark"] .doc-item:hover {
+        background-color: #2a2a2a;
+    }
+</style>
+
+<script>
+    // Script to handle the "Open Settings" button and check credentials
+    document.addEventListener('DOMContentLoaded', function() {
+        const openSettingsBtn = document.getElementById('openSettingsBtn');
+        const noCredentialsMessage = document.getElementById('noCredentialsMessage');
+        const connectGoogleDocsBtn = document.getElementById('connectGoogleDocs');
+        
+        // Handle "Open Settings" button click
+        if (openSettingsBtn) {
+            openSettingsBtn.addEventListener('click', function() {
+                // Scroll to the settings section
+                const settingsSection = document.querySelector('.settings-section');
+                if (settingsSection) {
+                    settingsSection.scrollIntoView({ behavior: 'smooth' });
+                    
+                    // Focus on the Google API Key field
+                    setTimeout(() => {
+                        const googleApiKeyField = document.getElementById('googleApiKey');
+                        if (googleApiKeyField) {
+                            googleApiKeyField.focus();
+                        }
+                    }, 500);
+                }
+            });
+        }
+        
+        // Check if credentials exist and update UI accordingly
+        function checkGoogleCredentials() {
+            const settings = StorageService.getSettings();
+            const hasCredentials = settings.googleApiKey && settings.googleClientId;
+            
+            if (noCredentialsMessage) {
+                noCredentialsMessage.style.display = hasCredentials ? 'none' : 'block';
+            }
+            
+            if (connectGoogleDocsBtn) {
+                connectGoogleDocsBtn.disabled = !hasCredentials;
+                if (!hasCredentials) {
+                    connectGoogleDocsBtn.title = 'API credentials required in Settings';
+                } else {
+                    connectGoogleDocsBtn.title = '';
+                }
+            }
+        }
+        
+        // Check initially
+        checkGoogleCredentials();
+        
+        // Also check when settings are saved
+        const saveSettingsBtn = document.getElementById('saveSettings');
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener('click', function() {
+                setTimeout(checkGoogleCredentials, 500);
+            });
+        }
+        
+        // Connect Google Docs button event handler
+        if (connectGoogleDocsBtn) {
+            connectGoogleDocsBtn.addEventListener('click', async function() {
+                if (!window.GoogleDocsService) {
+                    console.error('Google Docs Service not initialized');
+                    return;
+                }
+                
+                // Check credentials before trying to connect
+                const settings = StorageService.getSettings();
+                if (!settings.googleApiKey || !settings.googleClientId) {
+                    const statusEl = document.getElementById('googleAuthStatus');
+                    if (statusEl) {
+                        const statusText = statusEl.querySelector('.status-text');
+                        if (statusText) {
+                            statusText.textContent = 'API credentials required in Settings';
+                        }
+                    }
+                    return;
+                }
+                
+                try {
+                    if (await window.GoogleDocsService.isAuthenticated()) {
+                        window.GoogleDocsService.signOut();
+                    } else {
+                        window.GoogleDocsService.authorize();
+                    }
+                } catch (error) {
+                    console.error('Error toggling Google Docs authentication:', error);
+                }
+            });
+        }
+    });
+</script>
             </aside>
             
             <!-- Main Content Area -->
@@ -137,72 +440,149 @@
                     <button id="saveStyleGuide" class="small-btn">Save Style Guide</button>
                 </div>
                 
-                <div class="card settings-section">
-                    <h2>Settings</h2>
-                    <div class="form-group">
-                        <label for="apiKey">OpenRouter API Key:</label>
-                        <input type="password" id="apiKey" placeholder="Enter your OpenRouter API key">
-                    </div>
-                    <div class="form-group">
-                        <label for="siteUrl">Your Site URL:</label>
-                        <input type="text" id="siteUrl" placeholder="https://your-site.com">
-                    </div>
-                    <div class="form-group">
-                        <label for="siteName">Your Site Name:</label>
-                        <input type="text" id="siteName" placeholder="Your Site Name">
-                    </div>
-                    <div class="form-group">
-                        <label for="model">AI Model:</label>
-                        <select id="model">
-                            <option value="openai/gpt-4o">OpenAI GPT-4o</option>
-                            <option value="anthropic/claude-3-opus">Anthropic Claude 3 Opus</option>
-                            <option value="anthropic/claude-3.7-sonnet:beta">Anthropic Claude 3.7 Sonnet (Beta)</option>
-                            <option value="anthropic/claude-3.7-sonnet:thinking">Anthropic Claude 3.7 Sonnet (Thinking)</option>
-                            <option value="meta/llama-3-70b">Meta Llama 3 70B</option>
-                            <option value="google/gemini-pro">Google Gemini Pro</option>
-                            <option value="deepseek/deepseek-r1-zero:free">Deepseek R1 Zero</option>
-                            <option value="deepseek/deepseek-chat:free">Deepseek Chat (Free)</option>
-                            <option value="qwen/qwq-32b:free">Qwen QWQ 32B</option>
-                            <option value="open-r1/olympiccoder-32b:free">OlympicCoder 32B</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="defaultEvaluationModel">Evaluation Model:</label>
-                        <select id="defaultEvaluationModel">
-                            <option value="deepseek/deepseek-chat:free">Deepseek Chat (Free)</option>
-                            <option value="openai/gpt-4o">OpenAI GPT-4o</option>
-                            <option value="anthropic/claude-3-opus">Anthropic Claude 3 Opus</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="googleApiKey">Google API Key (Optional):</label>
-                        <input type="password" id="googleApiKey" placeholder="Google Cloud API Key">
-                        <p class="input-help">Only needed for advanced Google Docs features</p>
-                    </div>
-<div class="form-group">
-    <label for="googleClientId">Google Client ID:</label>
-    <input type="text" id="googleClientId" placeholder="Google OAuth Client ID">
-    <p class="input-help">Required for Google Docs authentication</p>
-</div>
-<div class="form-group">
-    <label for="customModelInput">Add Custom Model:</label>
-    <div class="input-group">
-        <input type="text" id="customModelInput" placeholder="Enter model identifier (e.g. openai/model-name)">
-        <button id="addCustomModelBtn" class="secondary-btn">Add Model</button>
-    </div>
-    <p class="input-help">Add custom models from OpenRouter to use in the dropdown above.</p>
-</div>
-<div class="form-group">
-    <button id="removeCustomModelBtn" class="secondary-btn">Remove Selected Model</button>
-    <p class="input-help">Select a custom model in the dropdown above and click this button to remove it.</p>
-</div>
-                    <button id="saveSettings" class="primary-btn">Save Settings</button>
-                    <div id="settingsStatus" class="status"></div>
-                </div>
-            </aside>
+                <!-- Complete Settings Section -->
+<div class="card settings-section">
+    <h2>Settings</h2>
+    
+    <div class="setting-group">
+        <div class="setting-title">OpenRouter Integration</div>
+        <div class="setting-description">Connect to OpenRouter to generate prose with your preferred AI models.</div>
+        
+        <div class="form-group">
+            <label for="apiKey">OpenRouter API Key:</label>
+            <input type="password" id="apiKey" placeholder="Enter your OpenRouter API key">
+            <p class="input-help">Get your API key from the <a href="https://openrouter.ai/keys" target="_blank">OpenRouter Keys page</a></p>
+        </div>
+        
+        <div class="form-group">
+            <label for="siteUrl">Your Site URL:</label>
+            <input type="text" id="siteUrl" placeholder="https://your-site.com">
+            <p class="input-help">Used for attribution in API requests</p>
+        </div>
+        
+        <div class="form-group">
+            <label for="siteName">Your Site Name:</label>
+            <input type="text" id="siteName" placeholder="Your Site Name">
+            <p class="input-help">Used for attribution in API requests</p>
         </div>
     </div>
     
+    <div class="setting-group">
+        <div class="setting-title">AI Model Selection</div>
+        <div class="setting-description">Choose which AI models to use for generation and evaluation.</div>
+        
+        <div class="form-group">
+            <label for="model">AI Model:</label>
+            <select id="model">
+                <option value="openai/gpt-4o">OpenAI GPT-4o</option>
+                <option value="anthropic/claude-3-opus">Anthropic Claude 3 Opus</option>
+                <option value="anthropic/claude-3.7-sonnet:beta">Anthropic Claude 3.7 Sonnet (Beta)</option>
+                <option value="anthropic/claude-3.7-sonnet:thinking">Anthropic Claude 3.7 Sonnet (Thinking)</option>
+                <option value="meta/llama-3-70b">Meta Llama 3 70B</option>
+                <option value="google/gemini-pro">Google Gemini Pro</option>
+                <option value="deepseek/deepseek-r1-zero:free">Deepseek R1 Zero</option>
+                <option value="deepseek/deepseek-chat:free">Deepseek Chat (Free)</option>
+                <option value="qwen/qwq-32b:free">Qwen QWQ 32B</option>
+                <option value="open-r1/olympiccoder-32b:free">OlympicCoder 32B</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="defaultEvaluationModel">Evaluation Model:</label>
+            <select id="defaultEvaluationModel">
+                <option value="deepseek/deepseek-chat:free">Deepseek Chat (Free)</option>
+                <option value="openai/gpt-4o">OpenAI GPT-4o</option>
+                <option value="anthropic/claude-3-opus">Anthropic Claude 3 Opus</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="customModelInput">Add Custom Model:</label>
+            <div class="input-group">
+                <input type="text" id="customModelInput" placeholder="Enter model identifier (e.g. openai/model-name)">
+                <button id="addCustomModelBtn" class="secondary-btn">Add Model</button>
+            </div>
+            <p class="input-help">Add custom models from OpenRouter to use in the dropdown above.</p>
+        </div>
+        
+        <div class="form-group">
+            <button id="removeCustomModelBtn" class="secondary-btn">Remove Selected Model</button>
+            <p class="input-help">Select a custom model in the dropdown above and click this button to remove it.</p>
+        </div>
+    </div>
+    
+    <div class="setting-group">
+        <div class="setting-title">Google Docs Integration</div>
+        <div class="setting-description">Connect to Google Docs to import and export your content.</div>
+        
+        <div class="form-group">
+            <label for="googleApiKey">Google API Key:</label>
+            <input type="password" id="googleApiKey" placeholder="Google Cloud API Key">
+            <p class="input-help">Required for Google Docs integration</p>
+        </div>
+        
+        <div class="form-group">
+            <label for="googleClientId">Google OAuth Client ID:</label>
+            <input type="text" id="googleClientId" placeholder="Google OAuth Client ID">
+            <p class="input-help">Required for Google Docs authentication</p>
+        </div>
+        
+        <div class="settings-info google-setup-guide">
+            <h4>Setting up Google Docs Integration</h4>
+            <p>To use Google Docs integration, you'll need to create your own Google Cloud project and credentials:</p>
+            <ol>
+                <li>Go to the <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a></li>
+                <li>Create a new project (or select an existing one)</li>
+                <li>From the navigation menu, select "APIs & Services" > "Library"</li>
+                <li>Enable both the "Google Docs API" and "Google Drive API"</li>
+                <li>Go to "APIs & Services" > "Credentials"</li>
+                <li>Click "Create Credentials" and select "API Key" 
+                    <ul>
+                        <li>Copy this key to the "Google API Key" field above</li>
+                        <li>Click "Restrict Key" and limit it to only Docs API and Drive API</li>
+                    </ul>
+                </li>
+                <li>Click "Create Credentials" again and select "OAuth client ID"
+                    <ul>
+                        <li>Choose "Web application" as the application type</li>
+                        <li>Add your domain to "Authorized JavaScript origins"</li>
+                        <li>Copy the client ID to the "Google OAuth Client ID" field above</li>
+                    </ul>
+                </li>
+                <li>You may need to set up an OAuth consent screen if prompted</li>
+            </ol>
+            <p><strong>Note:</strong> Your credentials are stored only in your browser and not shared with Cresonia or other users.</p>
+        </div>
+    </div>
+    
+    <button id="saveSettings" class="primary-btn">Save Settings</button>
+    <div id="settingsStatus" class="status"></div>
+</div>
+
+<style>
+    .google-setup-guide {
+        background-color: rgba(66, 133, 244, 0.1);
+        border-left: 4px solid var(--google-blue);
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+        font-size: 14px;
+    }
+    .google-setup-guide h4 {
+        color: var(--google-blue);
+        margin-top: 0;
+    }
+    .google-setup-guide ol {
+        padding-left: 20px;
+    }
+    .google-setup-guide li {
+        margin-bottom: 8px;
+    }
+    .google-setup-guide ul {
+        padding-left: 20px;
+        margin: 5px 0;
+    }
+</style>
     <!-- Modals -->
     <div id="projectModal" class="modal">
         <div class="modal-content">

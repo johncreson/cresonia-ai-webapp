@@ -10,6 +10,7 @@ class Settings {
         this.modelSelect = document.getElementById('model');
         this.evaluationModelSelect = document.getElementById('defaultEvaluationModel');
         this.googleApiKeyInput = document.getElementById('googleApiKey');
+        this.googleClientIdInput = document.getElementById('googleClientId');
         this.styleGuideInput = document.getElementById('styleGuide');
         this.saveSettingsBtn = document.getElementById('saveSettings');
         this.saveStyleGuideBtn = document.getElementById('saveStyleGuide');
@@ -83,6 +84,7 @@ class Settings {
         if (this.modelSelect) this.modelSelect.value = settings.model || 'openai/gpt-4o';
         if (this.evaluationModelSelect) this.evaluationModelSelect.value = settings.defaultEvaluationModel || 'deepseek/deepseek-chat:free';
         if (this.googleApiKeyInput) this.googleApiKeyInput.value = settings.googleApiKey || '';
+        if (this.googleClientIdInput) this.googleClientIdInput.value = settings.googleClientId || '';
         if (this.styleGuideInput) this.styleGuideInput.value = settings.styleGuide || '';
         
         const lastSentPromptEl = document.getElementById('lastSentPrompt');
@@ -289,6 +291,7 @@ class Settings {
             model: this.modelSelect?.value || 'openai/gpt-4o',
             defaultEvaluationModel: this.evaluationModelSelect?.value || 'deepseek/deepseek-chat:free',
             googleApiKey: this.googleApiKeyInput?.value || '',
+            googleClientId: this.googleClientIdInput?.value || '',
             styleGuide: this.styleGuideInput?.value || ''
         };
         
@@ -303,12 +306,42 @@ class Settings {
         }
         
         // Update Google API key if needed
-        if (window.GoogleDocsService && 
-            window.GoogleDocsService.API_KEY !== settings.googleApiKey) {
-            window.GoogleDocsService.API_KEY = settings.googleApiKey;
-            window.GoogleDocsService.initialize().catch(error => {
-                console.error('Error reinitializing Google Docs service:', error);
-            });
+        if (window.GoogleDocsService) {
+            const credentialsChanged = 
+                window.GoogleDocsService.API_KEY !== settings.googleApiKey || 
+                window.GoogleDocsService.CLIENT_ID !== settings.googleClientId;
+                
+            if (credentialsChanged) {
+                window.GoogleDocsService.API_KEY = settings.googleApiKey;
+                window.GoogleDocsService.CLIENT_ID = settings.googleClientId;
+                window.GoogleDocsService.initialize().catch(error => {
+                    console.error('Error reinitializing Google Docs service:', error);
+                });
+            }
+        }
+        
+        // Update credential status display
+        this.updateGoogleCredentialStatus(settings);
+    }
+    
+    /**
+     * Update Google credential status message visibility
+     */
+    updateGoogleCredentialStatus(settings) {
+        const noCredentialsMessage = document.getElementById('noCredentialsMessage');
+        const connectBtn = document.getElementById('connectGoogleDocs');
+        
+        if (!noCredentialsMessage || !connectBtn) return;
+        
+        const hasCredentials = settings.googleApiKey && settings.googleClientId;
+        
+        noCredentialsMessage.style.display = hasCredentials ? 'none' : 'block';
+        connectBtn.disabled = !hasCredentials;
+        
+        if (!hasCredentials) {
+            connectBtn.title = 'API credentials required in Settings';
+        } else {
+            connectBtn.title = '';
         }
     }
     
@@ -390,6 +423,49 @@ class Settings {
             const debugBtn = document.getElementById('debugBtn');
             if (debugBtn) debugBtn.disabled = false;
             
+            setTimeout(() => {
+                this.settingsStatus.textContent = '';
+            }, 5000);
+        }
+    }
+    
+    /**
+     * Test Google API connection
+     */
+    async testGoogleConnection() {
+        if (!this.settingsStatus) return;
+        
+        try {
+            this.settingsStatus.textContent = 'Testing Google API connection...';
+            
+            const settings = StorageService.getSettings();
+            if (!settings.googleApiKey || !settings.googleClientId) {
+                this.settingsStatus.textContent = 'Google API credentials are required';
+                setTimeout(() => {
+                    this.settingsStatus.textContent = '';
+                }, 3000);
+                return;
+            }
+            
+            // Attempt to initialize Google Docs service
+            if (window.GoogleDocsService) {
+                window.GoogleDocsService.API_KEY = settings.googleApiKey;
+                window.GoogleDocsService.CLIENT_ID = settings.googleClientId;
+                
+                try {
+                    await window.GoogleDocsService.initialize();
+                    this.settingsStatus.textContent = 'Google API initialized successfully!';
+                } catch (error) {
+                    console.error('Google API initialization error:', error);
+                    this.settingsStatus.textContent = `Google API Error: ${error.message}`;
+                }
+            } else {
+                this.settingsStatus.textContent = 'Google Docs Service not available';
+            }
+        } catch (error) {
+            console.error('Test Google connection error:', error);
+            this.settingsStatus.textContent = `Google API error: ${error.message}`;
+        } finally {
             setTimeout(() => {
                 this.settingsStatus.textContent = '';
             }, 5000);
