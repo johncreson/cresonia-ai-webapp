@@ -163,15 +163,87 @@ class GoogleDocsService {
     }
     
     /**
+     * Update auth status UI
+     */
+    static updateAuthStatus(isConnected) {
+        const statusElement = document.getElementById('googleAuthStatus');
+        const controlsElement = document.getElementById('googleDocsControls');
+        const connectButton = document.getElementById('connectGoogleDocs');
+        
+        if (!statusElement) {
+            console.warn('GoogleDocsService: googleAuthStatus element not found');
+            return;
+        }
+        
+        if (!controlsElement) {
+            console.warn('GoogleDocsService: googleDocsControls element not found');
+        }
+        
+        if (!connectButton) {
+            console.warn('GoogleDocsService: connectGoogleDocs button not found');
+        }
+        
+        if (isConnected) {
+            statusElement.className = 'auth-status connected';
+            const statusText = statusElement.querySelector('.status-text');
+            if (statusText) {
+                statusText.textContent = 'Connected';
+            }
+            
+            if (controlsElement) {
+                controlsElement.style.display = 'flex';
+            }
+            
+            if (connectButton) {
+                connectButton.textContent = 'Disconnect from Google Docs';
+            }
+            
+            // Update documents list
+            this.listDocs().catch(error => {
+                console.error('Error listing docs after auth:', error);
+            });
+        } else {
+            statusElement.className = 'auth-status not-connected';
+            const statusText = statusElement.querySelector('.status-text');
+            if (statusText) {
+                if (!this.hasCredentials) {
+                    statusText.textContent = 'API credentials required';
+                } else {
+                    statusText.textContent = 'Not connected';
+                }
+            }
+            
+            if (controlsElement) {
+                controlsElement.style.display = 'none';
+            }
+            
+            if (connectButton) {
+                connectButton.textContent = 'Connect to Google Docs';
+            }
+            
+            // Clear documents list
+            const docsList = document.getElementById('googleDocsList');
+            if (docsList) {
+                docsList.innerHTML = '<div class="empty-placeholder">Connect to see your Google Docs</div>';
+            }
+        }
+    }
+    
+    /**
      * Update auth status message with custom text
      */
     static updateAuthStatusMessage(message) {
         const statusElement = document.getElementById('googleAuthStatus');
-        if (!statusElement) return;
+        if (!statusElement) {
+            console.warn('GoogleDocsService: googleAuthStatus element not found');
+            return;
+        }
         
         const statusText = statusElement.querySelector('.status-text');
         if (statusText) {
             statusText.textContent = message;
+        } else {
+            console.warn('GoogleDocsService: status-text element not found in googleAuthStatus');
         }
     }
     
@@ -219,7 +291,276 @@ class GoogleDocsService {
         }
     }
     
-    // Rest of the methods remain unchanged...
+    /**
+     * Check if user is authorized
+     */
+    static async isAuthenticated() {
+        if (!this.isInitialized) {
+            await this.initialize();
+        }
+        
+        return this.isAuthorized && this.hasCredentials;
+    }
+    
+    /**
+     * Sign out of Google
+     */
+    static signOut() {
+        const token = gapi.client.getToken();
+        if (token) {
+            try {
+                google.accounts.oauth2.revoke(token.access_token, () => {
+                    console.log('Token revoked');
+                });
+                gapi.client.setToken(null);
+                this.isAuthorized = false;
+                this.updateAuthStatus(false);
+                console.log('GoogleDocsService: Signed out');
+            } catch (error) {
+                console.error('Error signing out:', error);
+            }
+        }
+    }
+    
+    /**
+     * List user's Google Docs
+     */
+    static async listDocs(maxResults = 10) {
+        if (!this.isAuthorized || !this.hasCredentials) {
+            console.log('GoogleDocsService: Cannot list docs - not authorized');
+            return [];
+        }
+        
+        try {
+            // Make sure Drive API is loaded
+            if (!gapi.client.drive) {
+                await gapi.client.load('drive', 'v3');
+            }
+            
+            const response = await gapi.client.drive.files.list({
+                pageSize: maxResults,
+                fields: 'files(id, name, createdTime, webViewLink)',
+                q: "mimeType='application/vnd.google-apps.document' and trashed=false",
+                orderBy: 'modifiedTime desc'
+            });
+            
+            const docs = response.result.files;
+            this.updateDocsList(docs);
+            return docs;
+        } catch (error) {
+            console.error('Error listing documents:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Update the Google Docs list in the UI
+     */
+    static updateDocsList(docs) {
+        const listElement = document.getElementById('googleDocsList');
+        if (!listElement) {
+            console.warn('GoogleDocsService: googleDocsList element not found');
+            return;
+        }
+        
+        if (!docs || docs.length === 0) {
+            listElement.innerHTML = '<div class="empty-placeholder">No documents found</div>';
+            return;
+        }
+        
+        // Format the docs list
+        const docItems = docs.map(doc => {
+            const date = new Date(doc.createdTime);
+            const formattedDate = date.toLocaleDateString();
+            
+            return `
+                <div class="doc-item" data-id="${doc.id}" data-url="${doc.webViewLink}">
+                    <div class="doc-icon">📄</div>
+                    <div class="doc-title">${doc.name}</div>
+                    <div class="doc-date">${formattedDate}</div>
+                </div>
+            `;
+        }).join('');
+        
+        listElement.innerHTML = docItems;
+        
+        // Add event listeners for document items
+        document.querySelectorAll('.doc-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const docId = item.dataset.id;
+                const docUrl = item.dataset.url;
+                window.open(docUrl, '_blank');
+            });
+        });
+    }
+    
+    /**
+     * Get a Google Doc content
+     */
+    static async getDocument(documentId) {
+        if (!this.isAuthorized) {
+            throw new Error('Not authorized with Google');
+        }
+        
+        try {
+            // Make sure Docs API is loaded
+            if (!gapi.client.docs) {
+                await gapi.client.load('docs', 'v1');
+            }
+            
+            const response = await gapi.client.docs.documents.get({
+                documentId
+            });
+            
+            // Extract plain text content from the document
+            const document = response.result;
+            let content = '';
+            
+            // Process the document content
+            if (document.body && document.body.content) {
+                for (const element of document.body.content) {
+                    if (element.paragraph) {
+                        for (const paragraphElement of element.paragraph.elements) {
+                            if (paragraphElement.textRun && paragraphElement.textRun.content) {
+                                content += paragraphElement.textRun.content;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return {
+                id: document.documentId,
+                title: document.title,
+                content
+            };
+        } catch (error) {
+            console.error('Error getting document:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Create a new Google Doc
+     */
+    static async createDocument(title, content) {
+        if (!this.isAuthorized) {
+            throw new Error('Not authorized with Google');
+        }
+        
+        try {
+            // Make sure Docs API is loaded
+            if (!gapi.client.docs) {
+                await gapi.client.load('docs', 'v1');
+            }
+            
+            // Create an empty document first
+            const createResponse = await gapi.client.docs.documents.create({
+                title: title || 'Cresonia AI Generated Content'
+            });
+            
+            const documentId = createResponse.result.documentId;
+            
+            // Insert content into the document
+            if (content) {
+                await gapi.client.docs.documents.batchUpdate({
+                    documentId,
+                    resource: {
+                        requests: [{
+                            insertText: {
+                                location: {
+                                    index: 1
+                                },
+                                text: content
+                            }
+                        }]
+                    }
+                });
+            }
+            
+            return {
+                id: documentId,
+                url: `https://docs.google.com/document/d/${documentId}/edit`,
+                title: createResponse.result.title
+            };
+        } catch (error) {
+            console.error('Error creating document:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * Export current prose to Google Docs
+     */
+    static async exportCurrentProse() {
+        const responseElement = document.getElementById('response');
+        if (!responseElement) return;
+        
+        // Get the prose content
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = responseElement.innerHTML;
+        const proseContent = tempDiv.textContent || tempDiv.innerText;
+        
+        if (!proseContent || proseContent === 'Response will appear here...') {
+            alert('Please generate some prose content first');
+            return;
+        }
+        
+        // Check if authorized
+        if (!this.isAuthorized) {
+            await this.authorize();
+            return; // The callback will handle the rest
+        }
+        
+        try {
+            const currentProject = await StorageService.getCurrentProject();
+            const title = currentProject ? 
+                `${currentProject.name} - Cresonia AI` : 
+                'Cresonia AI Generated Content';
+            
+            const responseStatus = document.getElementById('responseStatus');
+            if (responseStatus) {
+                responseStatus.textContent = 'Creating Google Doc...';
+            }
+            
+            const doc = await this.createDocument(title, proseContent);
+            
+            // Show success message
+            if (responseStatus) {
+                responseStatus.textContent = `Exported to Google Docs successfully! Opening document...`;
+                setTimeout(() => {
+                    responseStatus.textContent = '';
+                }, 3000);
+            }
+            
+            // Open the document in a new tab
+            window.open(doc.url, '_blank');
+            
+            // Add the doc to the current project if applicable
+            if (currentProject) {
+                currentProject.googleDocId = doc.id;
+                currentProject.googleDocUrl = doc.url;
+                await StorageService.updateProject(currentProject);
+            }
+            
+            // Refresh the docs list
+            this.listDocs();
+            
+            return doc;
+        } catch (error) {
+            console.error('Error exporting to Google Docs:', error);
+            
+            const responseStatus = document.getElementById('responseStatus');
+            if (responseStatus) {
+                responseStatus.textContent = `Error exporting to Google Docs: ${error.message}`;
+                setTimeout(() => {
+                    responseStatus.textContent = '';
+                }, 5000);
+            }
+            
+            throw error;
+        }
+    }
 }
 
 // Initialize event listeners and add debug button
