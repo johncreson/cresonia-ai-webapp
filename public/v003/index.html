@@ -633,5 +633,89 @@
     <script src="js/components/DocsIntegration.js"></script>
     
     <script src="js/app.js"></script>
+
+<!-- 
+  Add this snippet before the closing </body> tag in your index.html 
+  This will load all the fixes and apply them automatically
+-->
+
+<!-- Directory structure for fix scripts -->
+<script>
+  // Create fix directories if they don't exist
+  (function() {
+    // Helper function to create directory structure
+    function createFixDirectories() {
+      const dir = 'js/fixes';
+      
+      // Using fetch to check if directory exists
+      fetch(dir + '/').catch(() => {
+        console.warn('Fix directory does not exist. Please create: ' + dir);
+        alert('Please create the directory: ' + dir + ' and place the fix files there.');
+      });
+    }
+    
+    // Check on DOM load
+    document.addEventListener('DOMContentLoaded', createFixDirectories);
+  })();
+</script>
+
+<!-- Fix scripts -->
+<script src="js/fixes/settings-fix.js"></script>
+<script src="js/fixes/prose-fix.js"></script>
+<script src="js/fixes/google-docs-fix.js"></script>
+<script src="js/fixes/content-protection-fix.js"></script>
+
+<!-- Debug helper functions -->
+<script>
+  // Helper functions for debugging
+  window.debugCresonia = function() {
+    console.group("🔍 Cresonia AI Debug Info");
+    
+    // Check DOM elements
+    console.group("DOM Elements");
+    const elements = ['prompt', 'response', 'evaluationResults', 'sendPrompt'];
+    elements.forEach(id => {
+      const el = document.getElementById(id);
+      console.log(`${id}: ${el ? '✅ Present' : '❌ Missing'}`);
+    });
+    console.groupEnd();
+    
+    // Check protection
+    console.group("Content Protection");
+    console.log(`Protection active: ${window._contentProtectionInterval ? '✅ Yes' : '❌ No'}`);
+    console.log(`Observer active: ${window._contentObserver ? '✅ Yes' : '❌ No'}`);
+    console.log(`Protected content: ${document.getElementById('response')?.getAttribute('data-protected-content') ? '✅ Yes' : '❌ No'}`);
+    console.groupEnd();
+    
+    // Check settings
+    console.group("Settings");
+    const settings = localStorage.getItem('cresonia-settings');
+    console.log(`Settings stored: ${settings ? '✅ Yes' : '❌ No'}`);
+    if (settings) {
+      const parsedSettings = JSON.parse(settings);
+      console.log("API Key set:", !!parsedSettings.apiKey);
+      console.log("Google API Key set:", !!parsedSettings.googleApiKey);
+      console.log("Google Client ID set:", !!parsedSettings.googleClientId);
+    }
+    console.groupEnd();
+    
+    console.groupEnd();
+    return "Debug info logged to console";
+  };
+  
+  window.fixCresonia = function() {
+    // Load settings
+    if (typeof loadSettings === 'function') loadSettings();
+    
+    // Setup handlers
+    if (typeof setupSettingsHandlers === 'function') setupSettingsHandlers();
+    if (typeof setupProseHandlers === 'function') setupProseHandlers();
+    if (typeof setupGoogleDocsHandlers === 'function') setupGoogleDocsHandlers();
+    if (typeof setupContentProtection === 'function') setupContentProtection();
+    
+    return "Cresonia fixes applied";
+  };
+</script>
+
 </body>
 </html>
