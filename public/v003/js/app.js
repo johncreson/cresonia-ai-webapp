@@ -1,4 +1,14 @@
 /**
+ * Find buttons by text content
+ */
+function findButtonsByText(text) {
+    const buttons = document.querySelectorAll('button');
+    return Array.from(buttons).filter(button => 
+        button.textContent.trim().includes(text)
+    );
+}
+
+/**
  * app.js
  * Main application logic for Cresonia AI v.003
  */
@@ -617,7 +627,7 @@
         window._protectionRestoreCount = 0;
         
         // Add event listeners to clear buttons
-        const clearButtons = document.querySelectorAll('button:contains("Clear")');
+        const clearButtons = findButtonsByText("Clear");
         clearButtons.forEach(button => {
             // Remove any existing listeners
             button.removeEventListener('click', window._handleClearClick);
