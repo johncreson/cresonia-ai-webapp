@@ -1,3 +1,220 @@
+/**
+ * Improved connect to Google Docs function
+ */
+function connectToGoogleDocs() {
+    console.log("Connect to Google Docs button clicked");
+    
+    // Get the current settings
+    const settings = StorageService.getSettings();
+    if (!settings.googleApiKey || !settings.googleClientId) {
+        console.error('Missing Google API credentials');
+        alert('Google API credentials are required. Please add them in Settings.');
+        return;
+    }
+    
+    // Initialize the service manually
+    initializeAndConnectGoogleDocs(settings.googleApiKey, settings.googleClientId);
+}
+
+/**
+ * Initialize and connect to Google Docs
+ */
+async function initializeAndConnectGoogleDocs(apiKey, clientId) {
+    console.log("Initializing Google Docs service with provided credentials");
+    
+    try {
+        // Ensure gapi is loaded
+        if (typeof gapi === 'undefined') {
+            console.error("GAPI not available");
+            alert("Google API not available. Please refresh the page and try again.");
+            return;
+        }
+        
+        // Load the client
+        await new Promise((resolve, reject) => {
+            gapi.load('client', {
+                callback: resolve,
+                onerror: reject,
+                timeout: 5000,
+                ontimeout: () => reject(new Error('GAPI loading timeout'))
+            });
+        });
+        
+        console.log("GAPI client loaded");
+        
+        // Initialize the client with API key
+        await gapi.client.init({
+            apiKey: apiKey,
+            discoveryDocs: [
+                'https://docs.googleapis.com/$discovery/rest?version=v1',
+                'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+            ]
+        });
+        
+        console.log("GAPI client initialized with API key");
+        
+        // Check if we have Google accounts API
+        if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+            console.error("Google Accounts API not available");
+            alert("Google Accounts API not available. Please refresh the page and try again.");
+            return;
+        }
+        
+        console.log("Google Accounts API is available");
+        
+        // Initialize token client
+        const tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: 'https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/drive.file',
+            callback: (response) => {
+                console.log("Auth callback received:", response);
+                
+                if (response.error) {
+                    console.error("OAuth error:", response);
+                    alert("Authentication failed: " + response.error);
+                    
+                    // Update UI
+                    const statusElement = document.getElementById('googleAuthStatus');
+                    if (statusElement) {
+                        statusElement.className = 'auth-status not-connected';
+                        const statusText = statusElement.querySelector('.status-text');
+                        if (statusText) {
+                            statusText.textContent = 'Authentication failed';
+                        }
+                    }
+                    
+                } else {
+                    console.log("Authorization successful");
+                    
+                    // Update UI
+                    const statusElement = document.getElementById('googleAuthStatus');
+                    const controlsElement = document.getElementById('googleDocsControls');
+                    const connectButton = document.getElementById('connectGoogleDocs');
+                    
+                    if (statusElement) {
+                        statusElement.className = 'auth-status connected';
+                        const statusText = statusElement.querySelector('.status-text');
+                        if (statusText) {
+                            statusText.textContent = 'Connected';
+                        }
+                    }
+                    
+                    if (controlsElement) {
+                        controlsElement.style.display = 'flex';
+                    }
+                    
+                    if (connectButton) {
+                        connectButton.textContent = 'Disconnect from Google Docs';
+                    }
+                    
+                    // Try to list docs
+                    listGoogleDocs();
+                }
+            },
+            prompt: 'consent'
+        });
+        
+        // Request the token
+        console.log("Requesting access token");
+        tokenClient.requestAccessToken();
+        
+    } catch (error) {
+        console.error("Error initializing Google Docs:", error);
+        alert("Failed to initialize Google Docs: " + error.message);
+    }
+}
+
+/**
+ * List Google Docs
+ */
+async function listGoogleDocs() {
+    try {
+        console.log("Listing Google Docs");
+        
+        // Make sure Drive API is loaded
+        if (!gapi.client.drive) {
+            await gapi.client.load('drive', 'v3');
+        }
+        
+        const response = await gapi.client.drive.files.list({
+            pageSize: 10,
+            fields: 'files(id, name, createdTime, webViewLink)',
+            q: "mimeType='application/vnd.google-apps.document' and trashed=false",
+            orderBy: 'modifiedTime desc'
+        });
+        
+        const docs = response.result.files;
+        
+        // Update the UI
+        const listElement = document.getElementById('googleDocsList');
+        if (!listElement) {
+            console.warn('googleDocsList element not found');
+            return;
+        }
+        
+        if (!docs || docs.length === 0) {
+            listElement.innerHTML = '<div class="empty-placeholder">No documents found</div>';
+            return;
+        }
+        
+        // Format the docs list
+        const docItems = docs.map(doc => {
+            const date = new Date(doc.createdTime);
+            const formattedDate = date.toLocaleDateString();
+            
+            return `
+                <div class="doc-item" data-id="${doc.id}" data-url="${doc.webViewLink}">
+                    <div class="doc-icon">📄</div>
+                    <div class="doc-title">${doc.name}</div>
+                    <div class="doc-date">${formattedDate}</div>
+                </div>
+            `;
+        }).join('');
+        
+        listElement.innerHTML = docItems;
+        
+        // Add event listeners for document items
+        document.querySelectorAll('.doc-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const docUrl = item.dataset.url;
+                window.open(docUrl, '_blank');
+            });
+        });
+        
+        console.log("Google Docs list updated");
+        
+    } catch (error) {
+        console.error("Error listing Google Docs:", error);
+    }
+}
+
+/**
+ * Add this to your DOMContentLoaded event handler:
+ */
+// Connect button click handler
+const connectBtn = document.getElementById('connectGoogleDocs');
+if (connectBtn) {
+    // Replace with a fresh button to clear any previous listeners
+    const newBtn = connectBtn.cloneNode(true);
+    connectBtn.parentNode.replaceChild(newBtn, connectBtn);
+    
+    // Add our listener
+    newBtn.addEventListener('click', connectToGoogleDocs);
+}
+
+// Refresh button click handler
+const refreshBtn = document.getElementById('refreshGoogleDocs');
+if (refreshBtn) {
+    // Replace with a fresh button to clear any previous listeners
+    const newRefreshBtn = refreshBtn.cloneNode(true);
+    refreshBtn.parentNode.replaceChild(newRefreshBtn, refreshBtn);
+    
+    // Add our listener
+    newRefreshBtn.addEventListener('click', listGoogleDocs);
+}
+
+
+
 function connectToGoogleDocs() {
     console.log("Connect to Google Docs button clicked");
     
