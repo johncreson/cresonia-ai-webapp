@@ -332,6 +332,7 @@
         }
         
         // Connect Google Docs button event handler
+<button id="connectGoogleDocs" class="primary-btn" onclick="connectToGoogleDocs()">Connect to Google Docs</button>
         if (connectGoogleDocsBtn) {
             connectGoogleDocsBtn.addEventListener('click', async function() {
                 if (!window.GoogleDocsService) {

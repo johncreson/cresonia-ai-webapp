@@ -1,3 +1,31 @@
+function connectToGoogleDocs() {
+    console.log("Connect to Google Docs button clicked");
+    
+    if (!window.GoogleDocsService) {
+        console.error('Google Docs Service not initialized');
+        alert('Google Docs Service not initialized. Please refresh the page and try again.');
+        return;
+    }
+    
+    // Check credentials before trying to connect
+    const settings = StorageService.getSettings();
+    if (!settings.googleApiKey || !settings.googleClientId) {
+        console.error('Missing Google API credentials');
+        alert('Google API credentials are required. Please add them in Settings.');
+        return;
+    }
+
+    // Force reinitialize the service with current credentials
+    window.GoogleDocsService.API_KEY = settings.googleApiKey;
+    window.GoogleDocsService.CLIENT_ID = settings.googleClientId;
+    
+    // Call the authorize method directly
+    window.GoogleDocsService.authorize().catch(error => {
+        console.error('Error authorizing with Google:', error);
+        alert('Failed to connect to Google. Check console for details.');
+    });
+}
+
 /**
  * Find buttons by text content
  */
@@ -97,6 +125,20 @@ function findButtonsByText(text) {
     };
     
     // DOM element getter function for more reliable element access
+
+// Connect Google Docs button - direct binding
+const connectGoogleDocsBtn = document.getElementById('connectGoogleDocs');
+if (connectGoogleDocsBtn) {
+    // Remove any existing listeners to prevent conflicts
+    const newBtn = connectGoogleDocsBtn.cloneNode(true);
+    connectGoogleDocsBtn.parentNode.replaceChild(newBtn, connectGoogleDocsBtn);
+    
+    // Add direct click handler
+    newBtn.addEventListener('click', function() {
+        connectToGoogleDocs();
+    });
+}
+
     function getElement(id, alternativeSelectors = []) {
         // Try the ID first
         let element = document.getElementById(id);
